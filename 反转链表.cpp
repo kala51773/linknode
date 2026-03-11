@@ -1,59 +1,59 @@
 /*链表反转*/
 #include <iostream>
-#include <stdlib.h>
-#include <stdio.h>
+
 using namespace std;
-struct  node {
-	int date;
-	node* next;
+
+struct node {
+    int data;
+    node* next;
 };
 
-void insertnode(node* head, int tmp)
-{
-	node* p = head;
-	while (p->next)
-	{
-		p = p->next;
-	}
-	p->next = (node*)malloc(sizeof(node));
-	p = p->next;
-	p->date = tmp;
-	p->next = NULL;
+void insertNode(node* head, int value) {
+    node* p = head;
+    while (p->next) {
+        p = p->next;
+    }
+    p->next = new node{value, nullptr};
+}
 
+void reverseList(node* head) {
+    node* cur = head->next;
+    if (cur == nullptr) {
+        return;
+    }
+
+    node* pre = nullptr;
+    while (cur) {
+        node* next = cur->next;
+        cur->next = pre;
+        pre = cur;
+        cur = next;
+    }
+
+    head->next = pre;
 }
-void re(node* head)
-{
-	node* cur, * tmp=NULL, * tmp2, * pre;
-	
-	cur = head->next;
-	if (cur == NULL)
-		return;
-	pre = NULL;
-	while (cur)
-	{
-		tmp = cur;
-		tmp2 = cur->next;
-		cur->next = pre;
-		pre = tmp;
-		cur = tmp2;
-	}
-	head->next = tmp;
-	head->date = -1;
-}
-int main()
-{
-	node* list = (node*)malloc(sizeof(node));
-	list->next = NULL;
-	int tmp;
-	while (scanf("%d", &tmp) != EOF)
-	{
-		insertnode(list, tmp);
-	}
-	re(list);
-	node* p = list;
-	while(p)
-	{ 
-	printf("%d", p->date);
-	p = p->next;
-	}
+
+int main() {
+    node* list = new node{-1, nullptr};
+
+    int value;
+    while (cin >> value) {
+        insertNode(list, value);
+    }
+
+    reverseList(list);
+
+    for (node* p = list->next; p; p = p->next) {
+        cout << p->data;
+    }
+
+    cout << '\n';
+
+    while (list) {
+        node* next = list->next;
+        delete list;
+        list = next;
+    }
+
+    return 0;
 }
