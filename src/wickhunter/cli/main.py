@@ -3,6 +3,7 @@ import argparse
 from wickhunter.analytics.report import EventPnL, build_event_report
 from wickhunter.backtest.replay import EventReplayer, ReplayEvent
 from wickhunter.backtest.runner import BacktestRunner
+from wickhunter.backtest.depth_replay import run_depth_replay_jsonl
 from wickhunter.backtest.l2_convert import convert_binance_depth_jsonl_to_replay
 from wickhunter.backtest.l2_data import (
     fetch_binance_futures_depth_snapshot_with_fallback,
@@ -216,6 +217,16 @@ def run_convert_depth_jsonl(input_path: str, output_path: str, *, strict: bool =
         f"output={output_path}"
     )
 
+
+
+def run_replay_depth_file(path: str, *, strict: bool = True) -> str:
+    result = run_depth_replay_jsonl(path, strict=strict)
+    return (
+        f"events={result.total_events}, snapshots={result.snapshot_events}, updates={result.update_events}, "
+        f"skipped={result.skipped_events}, ignored_non_depth={result.ignored_non_depth_events}, gaps={result.gap_events}, last_update_id={result.last_update_id}, "
+        f"best_bid={result.best_bid}, best_ask={result.best_ask}, mid={result.mid_price}"
+    )
+
 def run_bridge_demo() -> str:
     signal_engine = SignalEngine(
         quote_engine=QuoteEngine(max_name_risk=1_000),
@@ -333,6 +344,8 @@ def main() -> None:
     parser.add_argument("--convert-depth-jsonl", type=str, default=None, help="Convert raw Binance depth JSONL into replay JSONL")
     parser.add_argument("--convert-out", type=str, default="data/replay_depth.jsonl", help="Output JSONL path for converted depth replay")
     parser.add_argument("--convert-lenient", action="store_true", help="Skip invalid depth rows during conversion")
+    parser.add_argument("--replay-depth-file", type=str, default=None, help="Replay normalized depth JSONL into local book")
+    parser.add_argument("--replay-depth-lenient", action="store_true", help="Skip invalid/gap depth events during replay")
     parser.add_argument("--bridge-demo", action="store_true", help="Run exchange bridge -> signal demo")
     parser.add_argument("--portfolio-demo", action="store_true", help="Run portfolio position tracking demo")
     parser.add_argument("--runtime-demo", action="store_true", help="Run runtime wiring demo")
@@ -366,6 +379,8 @@ def main() -> None:
         print(run_download_l2_snapshot(args.download_l2_snapshot, args.snapshot_out, base_url=args.l2_base_url))
     elif args.convert_depth_jsonl:
         print(run_convert_depth_jsonl(args.convert_depth_jsonl, args.convert_out, strict=not args.convert_lenient))
+    elif args.replay_depth_file:
+        print(run_replay_depth_file(args.replay_depth_file, strict=not args.replay_depth_lenient))
     elif args.bridge_demo:
         print(run_bridge_demo())
     elif args.portfolio_demo:

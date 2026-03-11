@@ -2,6 +2,7 @@
 
 from wickhunter.backtest.replay import EventReplayer, ReplayEvent
 from wickhunter.backtest.runner import BacktestResult, BacktestRunner
+from wickhunter.backtest.depth_replay import DepthReplayResult, run_depth_replay_jsonl
 from wickhunter.backtest.l2_convert import DepthConvertStats, convert_binance_depth_jsonl_to_replay
 from wickhunter.backtest.l2_data import (
     BinanceDepthSnapshot,
@@ -15,6 +16,8 @@ __all__ = [
     "EventReplayer",
     "BacktestResult",
     "BacktestRunner",
+    "DepthReplayResult",
+    "run_depth_replay_jsonl",
     "DepthConvertStats",
     "convert_binance_depth_jsonl_to_replay",
     "BinanceDepthSnapshot",
