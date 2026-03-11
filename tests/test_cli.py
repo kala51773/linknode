@@ -1,10 +1,12 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from wickhunter.cli.main import (
     run_book_demo,
     run_bridge_demo,
+    run_download_l2_snapshot,
     run_cancel_demo,
     run_demo,
     run_exchange_demo,
@@ -124,6 +126,22 @@ class TestCli(unittest.TestCase):
             self.assertIn("events=2", output)
             self.assertIn("skipped_fills=1", output)
             self.assertIn("skipped_ratio=0.5", output)
+
+
+    @patch("wickhunter.cli.main.fetch_binance_futures_depth_snapshot")
+    @patch("wickhunter.cli.main.save_snapshot_as_replay_jsonl")
+    def test_run_download_l2_snapshot(self, mock_save, mock_fetch) -> None:
+        mock_fetch.return_value = type("Snap", (), {
+            "symbol": "BTCUSDT",
+            "last_update_id": 123,
+            "bids": ((100.0, 1.0),),
+            "asks": ((100.1, 2.0),),
+        })()
+        mock_save.return_value = "data/l2_snapshot.jsonl"
+
+        output = run_download_l2_snapshot("BTCUSDT", "data/l2_snapshot.jsonl")
+        self.assertIn("snapshot_saved=data/l2_snapshot.jsonl", output)
+        self.assertIn("symbol=BTCUSDT", output)
 
     def test_run_bridge_demo_contains_bridge_fields(self) -> None:
         output = run_bridge_demo()

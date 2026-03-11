@@ -3,6 +3,7 @@ import argparse
 from wickhunter.analytics.report import EventPnL, build_event_report
 from wickhunter.backtest.replay import EventReplayer, ReplayEvent
 from wickhunter.backtest.runner import BacktestRunner
+from wickhunter.backtest.l2_data import fetch_binance_futures_depth_snapshot, save_snapshot_as_replay_jsonl
 from wickhunter.common.config import RiskLimits, TradingConfig
 from wickhunter.common.events import FillEvent
 from wickhunter.core.mature_engine import NautilusTraderAdapter
@@ -189,6 +190,16 @@ def run_backtest_file(path: str, *, strict: bool = True) -> str:
         f"max_dd={result.max_drawdown}, profit_factor={pf}"
     )
 
+
+
+def run_download_l2_snapshot(symbol: str, output_path: str, *, base_url: str = "https://fapi.binance.com") -> str:
+    snapshot = fetch_binance_futures_depth_snapshot(symbol, base_url=base_url)
+    saved = save_snapshot_as_replay_jsonl(snapshot, output_path)
+    return (
+        f"snapshot_saved={saved}, symbol={snapshot.symbol}, "
+        f"last_update_id={snapshot.last_update_id}, bids={len(snapshot.bids)}, asks={len(snapshot.asks)}"
+    )
+
 def run_bridge_demo() -> str:
     signal_engine = SignalEngine(
         quote_engine=QuoteEngine(max_name_risk=1_000),
@@ -300,6 +311,9 @@ def main() -> None:
     parser.add_argument("--replay-file", type=str, default=None, help="Replay events from JSONL file")
     parser.add_argument("--backtest-file", type=str, default=None, help="Backtest fill events from JSONL file")
     parser.add_argument("--backtest-lenient", action="store_true", help="Skip invalid fill payloads during backtest")
+    parser.add_argument("--download-l2-snapshot", type=str, default=None, help="Download Binance futures L2 snapshot by symbol")
+    parser.add_argument("--snapshot-out", type=str, default="data/l2_snapshot.jsonl", help="Output JSONL path for downloaded L2 snapshot")
+    parser.add_argument("--l2-base-url", type=str, default="https://fapi.binance.com", help="Base URL for L2 snapshot download")
     parser.add_argument("--bridge-demo", action="store_true", help="Run exchange bridge -> signal demo")
     parser.add_argument("--portfolio-demo", action="store_true", help="Run portfolio position tracking demo")
     parser.add_argument("--runtime-demo", action="store_true", help="Run runtime wiring demo")
@@ -329,6 +343,8 @@ def main() -> None:
         print(run_m3_replay_file(args.replay_file))
     elif args.backtest_file:
         print(run_backtest_file(args.backtest_file, strict=not args.backtest_lenient))
+    elif args.download_l2_snapshot:
+        print(run_download_l2_snapshot(args.download_l2_snapshot, args.snapshot_out, base_url=args.l2_base_url))
     elif args.bridge_demo:
         print(run_bridge_demo())
     elif args.portfolio_demo:
