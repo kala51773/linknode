@@ -64,6 +64,7 @@ PYTHONPATH=src python -m wickhunter.cli.main --download-l2-snapshot BTCUSDT --sn
 PYTHONPATH=src python -m wickhunter.cli.main --download-l2-snapshot BTCUSDT --snapshot-out data/l2_snapshot.jsonl --l2-base-url https://fapi.binance.com
 PYTHONPATH=src python -m wickhunter.cli.main --convert-depth-jsonl data/raw_depth.jsonl --convert-out data/replay_depth.jsonl --convert-lenient
 PYTHONPATH=src python -m wickhunter.cli.main --replay-depth-file data/replay_depth.jsonl --replay-depth-lenient
+PYTHONPATH=src python -m wickhunter.cli.main --l2-backtest-file data/replay_depth.jsonl --l2-backtest-lenient
 PYTHONPATH=src python -m wickhunter.cli.main --bridge-demo
 PYTHONPATH=src python -m wickhunter.cli.main --portfolio-demo
 PYTHONPATH=src python -m wickhunter.cli.main --runtime-demo

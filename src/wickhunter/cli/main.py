@@ -5,6 +5,7 @@ from wickhunter.backtest.replay import EventReplayer, ReplayEvent
 from wickhunter.backtest.runner import BacktestRunner
 from wickhunter.backtest.depth_replay import run_depth_replay_jsonl
 from wickhunter.backtest.l2_convert import convert_binance_depth_jsonl_to_replay
+from wickhunter.backtest.l2_runner import run_l2_backtest_jsonl
 from wickhunter.backtest.l2_data import (
     fetch_binance_futures_depth_snapshot_with_fallback,
     save_snapshot_as_replay_jsonl,
@@ -219,6 +220,17 @@ def run_convert_depth_jsonl(input_path: str, output_path: str, *, strict: bool =
 
 
 
+def run_l2_backtest_file(path: str, *, strict: bool = True) -> str:
+    result = run_l2_backtest_jsonl(path, strict=strict)
+    return (
+        f"events={result.total_events}, depth_events={result.depth_events}, snapshots={result.snapshot_events}, "
+        f"updates={result.update_events}, skipped={result.skipped_events}, ignored_non_depth={result.ignored_non_depth_events}, "
+        f"gaps={result.gap_events}, avg_spread_bps={result.avg_spread_bps}, avg_depth_5bp={result.avg_depth_5bp_bid}, "
+        f"avg_depth_10bp={result.avg_depth_10bp_bid}, avg_mid_move_bps={result.avg_mid_move_bps}, "
+        f"last_update_id={result.last_update_id}, best_bid={result.best_bid}, best_ask={result.best_ask}"
+    )
+
+
 def run_replay_depth_file(path: str, *, strict: bool = True) -> str:
     result = run_depth_replay_jsonl(path, strict=strict)
     return (
@@ -345,7 +357,9 @@ def main() -> None:
     parser.add_argument("--convert-out", type=str, default="data/replay_depth.jsonl", help="Output JSONL path for converted depth replay")
     parser.add_argument("--convert-lenient", action="store_true", help="Skip invalid depth rows during conversion")
     parser.add_argument("--replay-depth-file", type=str, default=None, help="Replay normalized depth JSONL into local book")
+    parser.add_argument("--l2-backtest-file", type=str, default=None, help="Run microstructure backtest on normalized depth JSONL")
     parser.add_argument("--replay-depth-lenient", action="store_true", help="Skip invalid/gap depth events during replay")
+    parser.add_argument("--l2-backtest-lenient", action="store_true", help="Skip invalid/gap depth events during L2 backtest")
     parser.add_argument("--bridge-demo", action="store_true", help="Run exchange bridge -> signal demo")
     parser.add_argument("--portfolio-demo", action="store_true", help="Run portfolio position tracking demo")
     parser.add_argument("--runtime-demo", action="store_true", help="Run runtime wiring demo")
@@ -381,6 +395,8 @@ def main() -> None:
         print(run_convert_depth_jsonl(args.convert_depth_jsonl, args.convert_out, strict=not args.convert_lenient))
     elif args.replay_depth_file:
         print(run_replay_depth_file(args.replay_depth_file, strict=not args.replay_depth_lenient))
+    elif args.l2_backtest_file:
+        print(run_l2_backtest_file(args.l2_backtest_file, strict=not args.l2_backtest_lenient))
     elif args.bridge_demo:
         print(run_bridge_demo())
     elif args.portfolio_demo:

@@ -8,6 +8,7 @@ from wickhunter.cli.main import (
     run_bridge_demo,
     run_download_l2_snapshot,
     run_convert_depth_jsonl,
+    run_l2_backtest_file,
     run_replay_depth_file,
     run_cancel_demo,
     run_demo,
@@ -162,6 +163,20 @@ class TestCli(unittest.TestCase):
             self.assertIn("written=1", output)
             self.assertIn("skipped=1", output)
 
+
+    def test_run_l2_backtest_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "l2_backtest.jsonl"
+            path.write_text(
+                '{"ts_ms":1,"event_type":"depth_snapshot","payload":{"last_update_id":100,"bids":[[99,1]],"asks":[[101,1]]}}\n'
+                '{"ts_ms":2,"event_type":"depth_update","payload":{"first_update_id":101,"final_update_id":101,"bids":[[100,2]],"asks":[]}}\n',
+                encoding="utf-8",
+            )
+            output = run_l2_backtest_file(str(path))
+            self.assertIn("events=2", output)
+            self.assertIn("depth_events=2", output)
+            self.assertIn("avg_spread_bps=", output)
+            self.assertIn("avg_depth_5bp=", output)
 
     def test_run_replay_depth_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
