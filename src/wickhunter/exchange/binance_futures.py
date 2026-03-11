@@ -133,6 +133,27 @@ class BinanceFuturesClient:
             data = await resp.json()
         return data
 
+    async def cancel_all_open_orders(self, symbol: str) -> Any:
+        """Cancel all open orders for a symbol."""
+        session = await self.get_session()
+        url = f"{self.rest_url}/fapi/v1/allOpenOrders"
+
+        timestamp = int(time.time() * 1000)
+        params = {
+            "symbol": symbol.upper(),
+            "timestamp": str(timestamp),
+        }
+        query_string = "&".join([f"{k}={v}" for k, v in params.items()])
+        signature = self._generate_signature(query_string)
+
+        headers = {
+            "X-MBX-APIKEY": self.api_key
+        }
+
+        async with session.delete(f"{url}?{query_string}&signature={signature}", headers=headers) as resp:
+            data = await resp.json()
+        return data
+
     async def stream_depth(self, symbol: str, callback: Callable[[str], None], speed: str = "@100ms") -> None:
         stream_name = f"{symbol.lower()}@depth{speed}"
         url = f"{self.ws_url}/{stream_name}"

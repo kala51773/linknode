@@ -1,6 +1,8 @@
+import asyncio
+import time
 from dataclasses import dataclass, field
-from typing import Any
 from enum import Enum
+from typing import Any
 
 from wickhunter.common.events import HedgeOrder
 from wickhunter.strategy.quote_engine import QuotePlan
@@ -12,10 +14,41 @@ class MatureEngineKind(str, Enum):
 
 
 @dataclass(frozen=True, slots=True)
+class ExchangeOrderReport:
+    intent: str
+    symbol: str
+    side: str
+    qty: float
+    price: float
+    order_type: str
+    time_in_force: str
+    accepted: bool
+    reason: str
+    attempts: int
+    exchange_code: int | None = None
+    exchange_message: str | None = None
+    order_id: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class EmergencyStopReport:
+    reason: str
+    symbol: str
+    accepted: bool
+    attempts: int
+    exchange_code: int | None = None
+    exchange_message: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class EngineSubmitResult:
     accepted: bool
     backend: MatureEngineKind
     reason: str
+    attempts: int = 1
+    exchange_code: int | None = None
+    exchange_message: str | None = None
+    order_id: int | None = None
 
 
 class MatureEngineAdapter:
@@ -29,6 +62,9 @@ class MatureEngineAdapter:
     def submit_hedge_order(self, order: HedgeOrder) -> EngineSubmitResult:  # pragma: no cover - interface
         raise NotImplementedError
 
+    def emergency_stop(self, *, reason: str, symbols: tuple[str, ...]) -> EngineSubmitResult:
+        return EngineSubmitResult(accepted=False, backend=self.backend, reason="emergency_not_supported")
+
 
 @dataclass(slots=True)
 class NautilusTraderAdapter(MatureEngineAdapter):
@@ -37,6 +73,7 @@ class NautilusTraderAdapter(MatureEngineAdapter):
     backend: MatureEngineKind = MatureEngineKind.NAUTILUS_TRADER
     sent_quote_plans: list[QuotePlan] = field(default_factory=list)
     sent_hedge_orders: list[HedgeOrder] = field(default_factory=list)
+    emergency_reasons: list[str] = field(default_factory=list)
 
     def submit_quote_plan(self, plan: QuotePlan) -> EngineSubmitResult:
         if not plan.armed:
@@ -50,24 +87,330 @@ class NautilusTraderAdapter(MatureEngineAdapter):
         self.sent_hedge_orders.append(order)
         return EngineSubmitResult(accepted=True, backend=self.backend, reason="ok")
 
+    def emergency_stop(self, *, reason: str, symbols: tuple[str, ...]) -> EngineSubmitResult:
+        self.emergency_reasons.append(reason)
+        return EngineSubmitResult(accepted=True, backend=self.backend, reason="emergency_noop")
+
 
 @dataclass(slots=True)
 class BinanceDirectAdapter(MatureEngineAdapter):
-    """Direct adapter for Binance testing. In production, NautilusTrader is preferred."""
-    
-    backend: MatureEngineKind = MatureEngineKind("binance_direct")  # type: ignore
-    client: Any = None  # Using Any to avoid circular import if needed, but we could typing it properly if we want to
+    """Direct adapter for Binance testnet/live integration with retry + report capture."""
+
+    backend: MatureEngineKind = MatureEngineKind.BINANCE_DIRECT
+    client: Any | None = None
+    quote_symbol: str = ""
+    quote_order_type: str = "LIMIT"
+    quote_time_in_force: str = "GTX"
+    hedge_order_type: str = "LIMIT"
+    hedge_time_in_force: str = "IOC"
+    max_retries: int = 2
+    retry_backoff_seconds: float = 0.05
+    retryable_error_codes: tuple[int, ...] = (-1001, -1006, -1007, -1008, -1015, -1021)
+    order_reports: list[ExchangeOrderReport] = field(default_factory=list)
+    emergency_reports: list[EmergencyStopReport] = field(default_factory=list)
 
     def submit_quote_plan(self, plan: QuotePlan) -> EngineSubmitResult:
         if not plan.armed:
             return EngineSubmitResult(accepted=False, backend=self.backend, reason="plan_not_armed")
-        
-        # In a real sync-to-async bridge, we might send this to an asyncio queue
-        # For M1 MVP, we assume a background task consumes these intents and maps them to client.place_order()
-        return EngineSubmitResult(accepted=True, backend=self.backend, reason="ok")
+        if self.client is None:
+            return EngineSubmitResult(accepted=False, backend=self.backend, reason="client_missing")
+        if not self.quote_symbol:
+            return EngineSubmitResult(accepted=False, backend=self.backend, reason="quote_symbol_missing")
+        if not plan.levels:
+            return EngineSubmitResult(accepted=False, backend=self.backend, reason="no_quote_levels")
+
+        level = plan.levels[0]
+        return self._submit_order(
+            intent="quote",
+            symbol=self.quote_symbol,
+            side="BUY",
+            qty=level.size,
+            price=level.price,
+            order_type=self.quote_order_type,
+            time_in_force=self.quote_time_in_force,
+        )
 
     def submit_hedge_order(self, order: HedgeOrder) -> EngineSubmitResult:
         if order.qty <= 0 or order.limit_price <= 0:
             return EngineSubmitResult(accepted=False, backend=self.backend, reason="invalid_hedge_order")
-            
-        return EngineSubmitResult(accepted=True, backend=self.backend, reason="ok")
+        if self.client is None:
+            return EngineSubmitResult(accepted=False, backend=self.backend, reason="client_missing")
+
+        return self._submit_order(
+            intent="hedge",
+            symbol=order.symbol,
+            side=order.side,
+            qty=order.qty,
+            price=order.limit_price,
+            order_type=self.hedge_order_type,
+            time_in_force=self.hedge_time_in_force,
+        )
+
+    def emergency_stop(self, *, reason: str, symbols: tuple[str, ...]) -> EngineSubmitResult:
+        if self.client is None:
+            return EngineSubmitResult(accepted=False, backend=self.backend, reason="client_missing")
+        if not symbols:
+            return EngineSubmitResult(accepted=True, backend=self.backend, reason="no_symbols")
+
+        for symbol in symbols:
+            report = self._cancel_all_orders_for_symbol(symbol=symbol, reason=reason)
+            self.emergency_reports.append(report)
+            if not report.accepted:
+                return EngineSubmitResult(
+                    accepted=False,
+                    backend=self.backend,
+                    reason="emergency_cancel_failed",
+                    attempts=report.attempts,
+                    exchange_code=report.exchange_code,
+                    exchange_message=report.exchange_message,
+                )
+
+        return EngineSubmitResult(accepted=True, backend=self.backend, reason="emergency_cancel_ok")
+
+    def _cancel_all_orders_for_symbol(self, *, symbol: str, reason: str) -> EmergencyStopReport:
+        max_attempts = max(1, self.max_retries + 1)
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                payload = self._run_coro(self.client.cancel_all_open_orders(symbol=symbol))
+            except RuntimeError as exc:
+                if str(exc) != "running_event_loop":
+                    raise
+                return EmergencyStopReport(
+                    reason=reason,
+                    symbol=symbol,
+                    accepted=False,
+                    attempts=attempt,
+                    exchange_message="event_loop_running",
+                )
+            except Exception as exc:
+                report = EmergencyStopReport(
+                    reason=reason,
+                    symbol=symbol,
+                    accepted=False,
+                    attempts=attempt,
+                    exchange_message=str(exc),
+                )
+                if attempt >= max_attempts:
+                    return report
+                self._backoff()
+                continue
+
+            code, msg = self._extract_error(payload if isinstance(payload, dict) else {})
+            if code is not None and code < 0:
+                report = EmergencyStopReport(
+                    reason=reason,
+                    symbol=symbol,
+                    accepted=False,
+                    attempts=attempt,
+                    exchange_code=code,
+                    exchange_message=msg,
+                )
+                if code in self.retryable_error_codes and attempt < max_attempts:
+                    self._backoff()
+                    continue
+                return report
+
+            return EmergencyStopReport(reason=reason, symbol=symbol, accepted=True, attempts=attempt)
+
+        return EmergencyStopReport(reason=reason, symbol=symbol, accepted=False, attempts=max_attempts)
+
+    def _submit_order(
+        self,
+        *,
+        intent: str,
+        symbol: str,
+        side: str,
+        qty: float,
+        price: float,
+        order_type: str,
+        time_in_force: str,
+    ) -> EngineSubmitResult:
+        max_attempts = max(1, self.max_retries + 1)
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                payload = self._run_coro(
+                    self.client.place_order(
+                        symbol=symbol,
+                        side=side,
+                        qty=qty,
+                        price=price,
+                        order_type=order_type,
+                        time_in_force=time_in_force,
+                    )
+                )
+            except RuntimeError as exc:
+                if str(exc) != "running_event_loop":
+                    raise
+                return self._to_result(
+                    ExchangeOrderReport(
+                        intent=intent,
+                        symbol=symbol,
+                        side=side,
+                        qty=qty,
+                        price=price,
+                        order_type=order_type,
+                        time_in_force=time_in_force,
+                        accepted=False,
+                        reason="event_loop_running",
+                        attempts=attempt,
+                    )
+                )
+            except Exception as exc:  # pragma: no cover - covered by retry behavior tests
+                report = ExchangeOrderReport(
+                    intent=intent,
+                    symbol=symbol,
+                    side=side,
+                    qty=qty,
+                    price=price,
+                    order_type=order_type,
+                    time_in_force=time_in_force,
+                    accepted=False,
+                    reason="client_exception",
+                    attempts=attempt,
+                    exchange_message=str(exc),
+                )
+                self.order_reports.append(report)
+                if attempt >= max_attempts:
+                    return self._to_result(report)
+                self._backoff()
+                continue
+
+            report = self._build_report_from_payload(
+                intent=intent,
+                symbol=symbol,
+                side=side,
+                qty=qty,
+                price=price,
+                order_type=order_type,
+                time_in_force=time_in_force,
+                attempts=attempt,
+                payload=payload,
+            )
+            self.order_reports.append(report)
+
+            if report.accepted:
+                return self._to_result(report)
+
+            if report.exchange_code in self.retryable_error_codes and attempt < max_attempts:
+                self._backoff()
+                continue
+            return self._to_result(report)
+
+        return EngineSubmitResult(accepted=False, backend=self.backend, reason="unexpected_retry_exit")
+
+    def _run_coro(self, coro: Any) -> dict[str, Any]:
+        try:
+            asyncio.get_running_loop()
+            raise RuntimeError("running_event_loop")
+        except RuntimeError as exc:
+            if str(exc) == "running_event_loop":
+                raise
+        return asyncio.run(coro)
+
+    def _backoff(self) -> None:
+        if self.retry_backoff_seconds > 0:
+            time.sleep(self.retry_backoff_seconds)
+
+    def _build_report_from_payload(
+        self,
+        *,
+        intent: str,
+        symbol: str,
+        side: str,
+        qty: float,
+        price: float,
+        order_type: str,
+        time_in_force: str,
+        attempts: int,
+        payload: dict[str, Any],
+    ) -> ExchangeOrderReport:
+        code, msg = self._extract_error(payload)
+        order_id = self._extract_order_id(payload)
+
+        if code is not None and code < 0:
+            return ExchangeOrderReport(
+                intent=intent,
+                symbol=symbol,
+                side=side,
+                qty=qty,
+                price=price,
+                order_type=order_type,
+                time_in_force=time_in_force,
+                accepted=False,
+                reason=f"exchange_reject:{code}",
+                attempts=attempts,
+                exchange_code=code,
+                exchange_message=msg,
+                order_id=order_id,
+            )
+
+        accepted_status = {"NEW", "PARTIALLY_FILLED", "FILLED"}
+        status = payload.get("status")
+        if order_id is None and status not in accepted_status:
+            return ExchangeOrderReport(
+                intent=intent,
+                symbol=symbol,
+                side=side,
+                qty=qty,
+                price=price,
+                order_type=order_type,
+                time_in_force=time_in_force,
+                accepted=False,
+                reason="malformed_exchange_response",
+                attempts=attempts,
+                exchange_code=code,
+                exchange_message=msg,
+                order_id=order_id,
+            )
+
+        return ExchangeOrderReport(
+            intent=intent,
+            symbol=symbol,
+            side=side,
+            qty=qty,
+            price=price,
+            order_type=order_type,
+            time_in_force=time_in_force,
+            accepted=True,
+            reason="ok",
+            attempts=attempts,
+            exchange_code=code,
+            exchange_message=msg,
+            order_id=order_id,
+        )
+
+    @staticmethod
+    def _extract_error(payload: dict[str, Any]) -> tuple[int | None, str | None]:
+        raw_code = payload.get("code")
+        code: int | None
+        if isinstance(raw_code, int):
+            code = raw_code
+        elif isinstance(raw_code, str) and raw_code.lstrip("-").isdigit():
+            code = int(raw_code)
+        else:
+            code = None
+
+        msg = payload.get("msg")
+        return code, msg if isinstance(msg, str) else None
+
+    @staticmethod
+    def _extract_order_id(payload: dict[str, Any]) -> int | None:
+        raw_order_id = payload.get("orderId")
+        if isinstance(raw_order_id, int):
+            return raw_order_id
+        if isinstance(raw_order_id, str) and raw_order_id.isdigit():
+            return int(raw_order_id)
+        return None
+
+    def _to_result(self, report: ExchangeOrderReport) -> EngineSubmitResult:
+        return EngineSubmitResult(
+            accepted=report.accepted,
+            backend=self.backend,
+            reason=report.reason,
+            attempts=report.attempts,
+            exchange_code=report.exchange_code,
+            exchange_message=report.exchange_message,
+            order_id=report.order_id,
+        )

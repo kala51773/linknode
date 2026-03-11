@@ -1,4 +1,5 @@
 import unittest
+from typing import Any
 
 from wickhunter.common.config import RiskLimits
 from wickhunter.common.events import FillEvent
@@ -13,6 +14,19 @@ from wickhunter.risk.checks import RiskChecker, RuntimeRiskState
 from wickhunter.runtime import WickHunterRuntime
 from wickhunter.strategy.quote_engine import QuoteEngine
 from wickhunter.strategy.signal_engine import SignalEngine
+
+
+class FakeNotifier:
+    def __init__(self, *, errors: list[str] | None = None, exc: Exception | None = None) -> None:
+        self.errors = list(errors or [])
+        self.exc = exc
+        self.calls: list[dict[str, Any]] = []
+
+    def notify(self, *, event_type: str, payload: dict[str, Any]) -> list[str]:
+        self.calls.append({"event_type": event_type, "payload": payload})
+        if self.exc is not None:
+            raise self.exc
+        return list(self.errors)
 
 
 class TestRuntime(unittest.TestCase):
@@ -34,7 +48,7 @@ class TestRuntime(unittest.TestCase):
             ),
             backend=NautilusTraderAdapter(),
         )
-        return WickHunterRuntime(bridge=bridge, orchestrator=orchestrator)
+        return WickHunterRuntime(bridge=bridge, orchestrator=orchestrator, emergency_symbols=("BTCUSDT",))
 
     def test_runtime_step_success(self) -> None:
         runtime = self._build_runtime()
@@ -91,6 +105,73 @@ class TestRuntime(unittest.TestCase):
         )
         self.assertFalse(res.accepted)
         self.assertEqual(res.reason, "marketdata_latency")
+        self.assertTrue(res.emergency_triggered)
+
+    def test_runtime_halts_after_emergency_trigger(self) -> None:
+        runtime = self._build_runtime()
+        first = runtime.step(
+            fair_price=100.0,
+            fill=FillEvent(symbol="ALTUSDT", qty=5, price=10),
+            risk_state=RuntimeRiskState(),
+            hedge_reference_price=50_000,
+            marketdata_latency_ms=999,
+            consecutive_hedge_failures=0,
+            exchange_restricted=False,
+        )
+        second = runtime.step(
+            fair_price=100.0,
+            fill=FillEvent(symbol="ALTUSDT", qty=5, price=10),
+            risk_state=RuntimeRiskState(),
+            hedge_reference_price=50_000,
+            marketdata_latency_ms=50,
+            consecutive_hedge_failures=0,
+            exchange_restricted=False,
+        )
+
+        self.assertFalse(first.accepted)
+        self.assertTrue(first.emergency_triggered)
+        self.assertFalse(second.accepted)
+        self.assertEqual(second.reason, "runtime_halted")
+        self.assertEqual(len(runtime.emergency_events), 1)
+        self.assertEqual(runtime.emergency_events[0].reason, "marketdata_latency")
+        self.assertTrue(runtime.halted)
+
+    def test_runtime_notifies_emergency_event(self) -> None:
+        runtime = self._build_runtime()
+        notifier = FakeNotifier()
+        runtime.emergency_notifier = notifier
+
+        runtime.step(
+            fair_price=100.0,
+            fill=FillEvent(symbol="ALTUSDT", qty=5, price=10),
+            risk_state=RuntimeRiskState(),
+            hedge_reference_price=50_000,
+            marketdata_latency_ms=999,
+            consecutive_hedge_failures=0,
+            exchange_restricted=False,
+        )
+
+        self.assertEqual(len(notifier.calls), 1)
+        self.assertEqual(notifier.calls[0]["event_type"], "runtime_emergency")
+        self.assertEqual(notifier.calls[0]["payload"]["reason"], "marketdata_latency")
+        self.assertEqual(runtime.emergency_notification_errors, [])
+
+    def test_runtime_notifier_exception_collected(self) -> None:
+        runtime = self._build_runtime()
+        runtime.emergency_notifier = FakeNotifier(exc=RuntimeError("notify_boom"))
+
+        runtime.step(
+            fair_price=100.0,
+            fill=FillEvent(symbol="ALTUSDT", qty=5, price=10),
+            risk_state=RuntimeRiskState(),
+            hedge_reference_price=50_000,
+            marketdata_latency_ms=999,
+            consecutive_hedge_failures=0,
+            exchange_restricted=False,
+        )
+
+        self.assertEqual(len(runtime.emergency_notification_errors), 1)
+        self.assertIn("notifier_exception:notify_boom", runtime.emergency_notification_errors[0])
 
 
 if __name__ == "__main__":

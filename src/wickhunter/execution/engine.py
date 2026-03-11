@@ -1,9 +1,12 @@
 from dataclasses import dataclass
 
 from wickhunter.common.events import FillEvent, HedgeOrder
+from wickhunter.common.recovery import PersistentEventLog
 from wickhunter.execution.hedge_manager import HedgeManager
+from wickhunter.execution.order_tracker import OrderTracker, OrderState
 from wickhunter.execution.throttle import CancelThrottle
 from wickhunter.risk.checks import RiskChecker, RuntimeRiskState
+from wickhunter.core.mature_engine import ExchangeOrderReport
 
 
 @dataclass(slots=True)
@@ -27,10 +30,14 @@ class ExecutionEngine:
         risk_checker: RiskChecker,
         hedge_manager: HedgeManager,
         cancel_throttle: CancelThrottle | None = None,
+        order_tracker: OrderTracker | None = None,
+        event_log: PersistentEventLog | None = None,
     ) -> None:
         self._risk_checker = risk_checker
         self._hedge_manager = hedge_manager
         self._cancel_throttle = cancel_throttle or CancelThrottle()
+        self._order_tracker = order_tracker or OrderTracker()
+        self._event_log = event_log or PersistentEventLog()
 
     def on_b_fill(self, fill: FillEvent, state: RuntimeRiskState, reference_price: float) -> ExecutionResult:
         allowed, reason = self._risk_checker.can_process_fill(fill, state)
@@ -39,6 +46,24 @@ class ExecutionEngine:
 
         hedge = self._hedge_manager.build_hedge_order(fill, reference_price)
         return ExecutionResult(accepted=True, reason="ok", hedge_order=hedge)
+
+    def track_order(self, client_order_id: str, symbol: str, side: str, qty: float, price: float) -> OrderState:
+        state = self._order_tracker.track_order(client_order_id, symbol, side, qty, price)
+        self._event_log.append_event("order_new", {"client_order_id": client_order_id, "symbol": symbol, "side": side, "qty": qty, "price": price})
+        return state
+
+    def on_order_report(self, report: ExchangeOrderReport, client_order_id: str) -> OrderState | None:
+        state = self._order_tracker.on_report(
+            client_order_id=client_order_id,
+            status="REJECTED" if not report.accepted else "UNKNOWN", # Need mapping from exchange later
+            exchange_order_id=str(report.order_id) if report.order_id else None
+        )
+        self._event_log.append_event("order_report", {
+            "client_order_id": client_order_id,
+            "accepted": report.accepted,
+            "reason": report.reason
+        })
+        return state
 
     def request_cancel(self, *, now: float, order_created_at: float) -> CancelDecision:
         allowed, reason = self._cancel_throttle.can_cancel(now=now, order_created_at=order_created_at)
