@@ -83,7 +83,16 @@ class BinanceFuturesClient:
             data = await resp.json()
         return data
 
-    async def place_order(self, symbol: str, side: str, qty: float, price: float = 0.0, order_type: str = "LIMIT", time_in_force: str = "GTC") -> dict[str, Any]:
+    async def place_order(
+        self,
+        symbol: str,
+        side: str,
+        qty: float,
+        price: float = 0.0,
+        order_type: str = "LIMIT",
+        time_in_force: str = "GTC",
+        new_client_order_id: str | None = None,
+    ) -> dict[str, Any]:
         """Place an order (B passive or A IOC)."""
         session = await self.get_session()
         url = f"{self.rest_url}/fapi/v1/order"
@@ -99,6 +108,8 @@ class BinanceFuturesClient:
         if order_type.upper() == "LIMIT":
             params["price"] = str(price)
             params["timeInForce"] = time_in_force.upper()
+        if new_client_order_id:
+            params["newClientOrderId"] = new_client_order_id
             
         query_string = "&".join([f"{k}={v}" for k, v in params.items()])
         signature = self._generate_signature(query_string)
@@ -150,9 +161,71 @@ class BinanceFuturesClient:
             "X-MBX-APIKEY": self.api_key
         }
 
-        async with session.delete(f"{url}?{query_string}&signature={signature}", headers=headers) as resp:
+    async def get_open_orders(self, symbol: str) -> list[dict[str, Any]]:
+        """Fetch all current open orders for a symbol."""
+        session = await self.get_session()
+        url = f"{self.rest_url}/fapi/v1/openOrders"
+        
+        timestamp = int(time.time() * 1000)
+        params = {
+            "symbol": symbol.upper(),
+            "timestamp": str(timestamp),
+        }
+        query_string = "&".join([f"{k}={v}" for k, v in params.items()])
+        signature = self._generate_signature(query_string)
+        
+        headers = {"X-MBX-APIKEY": self.api_key}
+        async with session.get(f"{url}?{query_string}&signature={signature}", headers=headers) as resp:
+            resp.raise_for_status()
+            data = await resp.json()
+        return data if isinstance(data, list) else []
+
+    async def get_order_status(self, symbol: str, order_id: int | None = None, orig_client_order_id: str | None = None) -> dict[str, Any]:
+        """Fetch status of a specific order."""
+        session = await self.get_session()
+        url = f"{self.rest_url}/fapi/v1/order"
+        
+        timestamp = int(time.time() * 1000)
+        params = {
+            "symbol": symbol.upper(),
+            "timestamp": str(timestamp),
+        }
+        if order_id:
+            params["orderId"] = str(order_id)
+        if orig_client_order_id:
+            params["origClientOrderId"] = orig_client_order_id
+            
+        query_string = "&".join([f"{k}={v}" for k, v in params.items()])
+        signature = self._generate_signature(query_string)
+        
+        headers = {"X-MBX-APIKEY": self.api_key}
+        async with session.get(f"{url}?{query_string}&signature={signature}", headers=headers) as resp:
+            resp.raise_for_status()
             data = await resp.json()
         return data
+
+    async def create_listen_key(self) -> str:
+        session = await self.get_session()
+        url = f"{self.rest_url}/fapi/v1/listenKey"
+        headers = {"X-MBX-APIKEY": self.api_key}
+        async with session.post(url, headers=headers) as resp:
+            resp.raise_for_status()
+            data = await resp.json()
+        return data["listenKey"]
+
+    async def keepalive_listen_key(self) -> None:
+        session = await self.get_session()
+        url = f"{self.rest_url}/fapi/v1/listenKey"
+        headers = {"X-MBX-APIKEY": self.api_key}
+        async with session.put(url, headers=headers) as resp:
+            resp.raise_for_status()
+
+    async def delete_listen_key(self) -> None:
+        session = await self.get_session()
+        url = f"{self.rest_url}/fapi/v1/listenKey"
+        headers = {"X-MBX-APIKEY": self.api_key}
+        async with session.delete(url, headers=headers) as resp:
+            resp.raise_for_status()
 
     async def stream_depth(self, symbol: str, callback: Callable[[str], None], speed: str = "@100ms") -> None:
         stream_name = f"{symbol.lower()}@depth{speed}"
@@ -165,3 +238,14 @@ class BinanceFuturesClient:
             except websockets.ConnectionClosed:
                 continue
 
+    async def stream_user_data(self, listen_key: str, callback: Callable[[str], None]) -> None:
+        """Connects to the User Data Stream using the provided listenKey and feeds messages to the callback."""
+        url = f"{self.ws_url}/{listen_key}"
+        
+        async for ws in websockets.connect(url):
+            try:
+                async for message in ws:
+                    callback(message)
+            except websockets.ConnectionClosed:
+                # If WS drops, reconnection triggers re-fetching URL (though listenKey itself must be kept alive elsewhere)
+                continue

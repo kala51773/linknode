@@ -45,6 +45,13 @@ class WickHunterRuntime:
     def on_market_payloads(self, payloads: list[str]) -> int:
         return self.bridge.ingest_many(payloads)
 
+    def on_user_report(self, payload: dict[str, Any]) -> None:
+        """Process incoming private exchange reports (orders, trades)."""
+        if self.halted:
+            return
+        # Route to backend adapter for tracking/reconciliation
+        self.orchestrator.backend.on_execution_report(payload)
+
     def on_snapshot(
         self,
         *,

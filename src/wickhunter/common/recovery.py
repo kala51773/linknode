@@ -27,7 +27,18 @@ class PersistentEventLog:
             # We don't want telemetry failures to crash execution, so just log.
             logger.error(f"Failed to write to persistent log: {e}")
 
-    def replay_orders(self) -> list[dict[str, Any]]:
-        """Placeholder: could reconstruct open orders list from JSONL on startup."""
-        logger.info("Replaying order log for recovery.")
-        return []
+    def replay_events(self) -> list[dict[str, Any]]:
+        """Read all events from the log for state reconstruction."""
+        import os
+        if not os.path.exists(self.file_path):
+            return []
+
+        events = []
+        try:
+            with open(self.file_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        events.append(json.loads(line))
+        except Exception as e:
+            logger.error(f"Failed to replay log: {e}")
+        return events

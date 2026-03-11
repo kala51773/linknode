@@ -13,6 +13,36 @@ class TradingConfig:
 
 
 @dataclass(slots=True)
+class ExchangeConfig:
+    """Config for exchange connection, allowing environment-based secrets and URL selection."""
+    api_key: str = ""
+    api_secret: str = ""
+    rest_url: str = "https://fapi.binance.com"
+    ws_url: str = "wss://fstream.binance.com/ws"
+    testnet: bool = False
+
+    @classmethod
+    def from_env(cls, prefix: str = "BINANCE_") -> "ExchangeConfig":
+        import os
+        testnet = os.getenv(f"{prefix}TESTNET", "false").lower() == "true"
+        if testnet:
+            return cls(
+                api_key=os.getenv(f"{prefix}API_KEY", ""),
+                api_secret=os.getenv(f"{prefix}API_SECRET", ""),
+                rest_url="https://testnet.binancefuture.com",
+                ws_url="wss://testnet.binancefuture.com/ws",
+                testnet=True
+            )
+        return cls(
+            api_key=os.getenv(f"{prefix}API_KEY", ""),
+            api_secret=os.getenv(f"{prefix}API_SECRET", ""),
+            rest_url="https://fapi.binance.com",
+            ws_url="wss://fstream.binance.com/ws",
+            testnet=False
+        )
+
+
+@dataclass(slots=True)
 class RiskLimits:
     """Hard limits based on the V1 PRD baseline."""
 

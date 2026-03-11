@@ -58,6 +58,7 @@ class FakeBinanceClient:
         price: float = 0.0,
         order_type: str = "LIMIT",
         time_in_force: str = "GTC",
+        new_client_order_id: str | None = None,
     ) -> dict[str, Any]:
         self.calls.append(
             {
@@ -67,6 +68,7 @@ class FakeBinanceClient:
                 "price": price,
                 "order_type": order_type,
                 "time_in_force": time_in_force,
+                "new_client_order_id": new_client_order_id,
             }
         )
 
@@ -99,8 +101,16 @@ class TestBinanceDirectAdapter(unittest.TestCase):
         self.assertEqual(result.backend, MatureEngineKind.BINANCE_DIRECT)
         self.assertEqual(result.attempts, 1)
         self.assertEqual(result.order_id, 101)
+        self.assertIsNotNone(result.client_order_id)
         self.assertEqual(len(client.calls), 1)
         self.assertEqual(adapter.order_reports[-1].intent, "hedge")
+        assert result.client_order_id is not None
+        state = adapter.order_tracker.get_order(result.client_order_id)
+        assert state is not None
+        self.assertEqual(state.status, "NEW")
+        self.assertEqual(state.exchange_order_id, "101")
+        self.assertEqual(state.intent, "hedge")
+        self.assertEqual(client.calls[0]["new_client_order_id"], result.client_order_id)
 
     def test_retry_on_retryable_code_then_success(self) -> None:
         client = FakeBinanceClient(
@@ -130,6 +140,10 @@ class TestBinanceDirectAdapter(unittest.TestCase):
         self.assertEqual(result.exchange_code, -2019)
         self.assertEqual(result.attempts, 1)
         self.assertEqual(len(client.calls), 1)
+        assert result.client_order_id is not None
+        state = adapter.order_tracker.get_order(result.client_order_id)
+        assert state is not None
+        self.assertEqual(state.status, "REJECTED")
 
     def test_submit_quote_plan_uses_first_level(self) -> None:
         client = FakeBinanceClient([{"orderId": 303, "status": "NEW"}])
@@ -153,6 +167,23 @@ class TestBinanceDirectAdapter(unittest.TestCase):
         self.assertEqual(client.calls[0]["side"], "BUY")
         self.assertEqual(client.calls[0]["price"], 99.1)
         self.assertEqual(client.calls[0]["qty"], 10.0)
+        self.assertEqual(client.calls[0]["new_client_order_id"], result.client_order_id)
+
+    def test_on_execution_report_moves_order_to_filled(self) -> None:
+        client = FakeBinanceClient([{"orderId": 404, "status": "NEW"}])
+        adapter = BinanceDirectAdapter(client=client, max_retries=1, retry_backoff_seconds=0.0)
+
+        submit = adapter.submit_hedge_order(HedgeOrder(symbol="BTCUSDT", side="SELL", qty=0.02, limit_price=50_000))
+        assert submit.client_order_id is not None
+
+        state = adapter.on_execution_report(
+            {"c": submit.client_order_id, "i": 404, "X": "FILLED", "z": "0.02"}
+        )
+
+        assert state is not None
+        self.assertEqual(state.status, "FILLED")
+        self.assertEqual(state.filled_qty, 0.02)
+        self.assertEqual(adapter.order_tracker.get_open_orders(), [])
 
     def test_submit_quote_plan_missing_symbol_rejected(self) -> None:
         client = FakeBinanceClient([])

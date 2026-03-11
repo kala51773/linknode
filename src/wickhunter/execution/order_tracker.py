@@ -32,6 +32,7 @@ VALID_TRANSITIONS: dict[str, set[str]] = {
         OrderStatus.EXPIRED.value,
     },
     OrderStatus.NEW.value: {
+        OrderStatus.NEW.value,
         OrderStatus.PARTIALLY_FILLED.value,
         OrderStatus.FILLED.value,
         OrderStatus.CANCELED.value,
@@ -169,6 +170,9 @@ class OrderTracker:
             state = self.orders.get(client_order_id)
             if state is not None:
                 return state
+            closed_state = self.closed_orders.get(client_order_id)
+            if closed_state is not None:
+                return closed_state
         if exchange_order_id:
             mapped_client_order_id = self._exchange_to_client.get(exchange_order_id)
             if mapped_client_order_id:
