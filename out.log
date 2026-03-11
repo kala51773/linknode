@@ -1,0 +1,29 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "D:\codex\linknode\src\wickhunter\cli\main.py", line 350, in <module>
+    main()
+  File "D:\codex\linknode\src\wickhunter\cli\main.py", line 344, in main
+    print(run_l2_real_demo())
+          ^^^^^^^^^^^^^^^^^^
+  File "D:\codex\linknode\src\wickhunter\cli\main.py", line 289, in run_l2_real_demo
+    report = simulator.run(path)
+             ^^^^^^^^^^^^^^^^^^^
+  File "D:\codex\linknode\src\wickhunter\backtest\l2_simulator.py", line 53, in run
+    self.runtime.on_market_payloads([raw_binance])
+  File "D:\codex\linknode\src\wickhunter\runtime.py", line 29, in on_market_payloads
+    return self.bridge.ingest_many(payloads)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\codex\linknode\src\wickhunter\exchange\bridge.py", line 20, in ingest_many
+    self.ingest_depth_payload(payload)
+  File "D:\codex\linknode\src\wickhunter\exchange\bridge.py", line 16, in ingest_depth_payload
+    self.signal_engine.on_normalized_depth_event(event)
+  File "D:\codex\linknode\src\wickhunter\strategy\signal_engine.py", line 22, in on_normalized_depth_event
+    self.on_depth_update(
+  File "D:\codex\linknode\src\wickhunter\strategy\signal_engine.py", line 19, in on_depth_update
+    self.synchronizer.on_depth_update(update)
+  File "D:\codex\linknode\src\wickhunter\marketdata\synchronizer.py", line 22, in on_depth_update
+    self.book.apply(update)
+  File "D:\codex\linknode\src\wickhunter\marketdata\orderbook.py", line 46, in apply
+    raise ValueError(
+ValueError: sequence gap detected: last=10089151986629, incoming=[10089152081819, 10089152087885]

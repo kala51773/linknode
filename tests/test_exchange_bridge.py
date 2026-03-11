@@ -20,8 +20,8 @@ class TestExchangeBridge(unittest.TestCase):
         )
 
         payloads = [
-            '{"e":"depthUpdate","E":1,"s":"BTCUSDT","U":101,"u":101,"b":[["100.0","30.0"]],"a":[]}',
-            '{"e":"depthUpdate","E":2,"s":"BTCUSDT","U":102,"u":102,"b":[],"a":[["100.1","5.0"]]}',
+            '{"e":"depthUpdate","E":1,"s":"BTCUSDT","U":101,"u":101,"pu":100,"b":[["100.0","30.0"]],"a":[]}',
+            '{"e":"depthUpdate","E":2,"s":"BTCUSDT","U":102,"u":102,"pu":101,"b":[],"a":[["100.1","5.0"]]}',
         ]
 
         count = bridge.ingest_many(payloads)

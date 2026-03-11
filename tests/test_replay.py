@@ -1,6 +1,6 @@
-import tempfile
 import unittest
 from pathlib import Path
+from uuid import uuid4
 
 from wickhunter.backtest.replay import EventReplayer, ReplayEvent
 
@@ -16,8 +16,8 @@ class TestReplay(unittest.TestCase):
         self.assertEqual([e.ts_ms for e in ordered], [1, 2, 3])
 
     def test_load_jsonl_and_sort(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "events.jsonl"
+        path = Path(__file__).parent / f"tmp_replay_{uuid4().hex}.jsonl"
+        try:
             path.write_text(
                 '{"ts_ms": 3, "event_type": "fill", "payload": {"qty": 1}}\n'
                 '{"ts_ms": 1, "event_type": "quote", "payload": {}}\n',
@@ -25,6 +25,8 @@ class TestReplay(unittest.TestCase):
             )
             ordered = EventReplayer.from_jsonl(path).run()
             self.assertEqual([e.ts_ms for e in ordered], [1, 3])
+        finally:
+            path.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

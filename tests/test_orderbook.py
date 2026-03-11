@@ -12,7 +12,7 @@ class TestOrderBook(unittest.TestCase):
             asks=((101.0, 1.0), (102.0, 2.0)),
         )
 
-        book.apply(DepthUpdate(first_update_id=11, final_update_id=11, bids=((100.0, 3.0),), asks=()))
+        book.apply(DepthUpdate(first_update_id=11, final_update_id=11, prev_final_update_id=10, bids=((100.0, 3.0),), asks=()))
         book.apply(DepthUpdate(first_update_id=12, final_update_id=12, bids=(), asks=((101.0, 0.0),)))
 
         self.assertEqual(book.best_bid, (100.0, 3.0))

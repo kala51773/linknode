@@ -23,6 +23,7 @@ class SignalEngine:
             DepthUpdate(
                 first_update_id=event.first_update_id,
                 final_update_id=event.final_update_id,
+                prev_final_update_id=event.prev_final_update_id,
                 bids=event.bids,
                 asks=event.asks,
             )

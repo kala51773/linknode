@@ -21,6 +21,8 @@ from wickhunter.strategy.signal_engine import SignalEngine
 from wickhunter.strategy.state_machine import EngineState, StrategyState
 from wickhunter.simulation.hedge_latency import HedgeLatencyModel
 from wickhunter.runtime import WickHunterRuntime
+from wickhunter.backtest.l2_simulator import create_default_l2_simulator
+from pathlib import Path
 
 
 def run_demo() -> str:
@@ -47,15 +49,15 @@ def run_book_demo() -> str:
         bids=((100.0, 2.0), (99.5, 3.0)),
         asks=((100.5, 1.5), (101.0, 4.0)),
     )
-    book.apply(DepthUpdate(first_update_id=101, final_update_id=101, bids=((100.0, 1.0),), asks=()))
-    book.apply(DepthUpdate(first_update_id=102, final_update_id=102, bids=(), asks=((100.5, 0.0),)))
+    book.apply(DepthUpdate(first_update_id=101, final_update_id=101, prev_final_update_id=100, bids=((100.0, 1.0),), asks=()))
+    book.apply(DepthUpdate(first_update_id=102, final_update_id=102, prev_final_update_id=101, bids=(), asks=((100.5, 0.0),)))
 
     return f"best_bid={book.best_bid}, best_ask={book.best_ask}, mid={book.mid_price}"
 
 
 def run_sync_demo() -> str:
     sync = BookSynchronizer()
-    sync.on_depth_update(DepthUpdate(first_update_id=101, final_update_id=101, bids=((100.0, 1.0),)))
+    sync.on_depth_update(DepthUpdate(first_update_id=101, final_update_id=101, prev_final_update_id=100, bids=((100.0, 1.0),)))
     sync.on_depth_update(DepthUpdate(first_update_id=102, final_update_id=102, asks=((101.0, 2.0),)))
     sync.apply_snapshot(last_update_id=100, bids=((99.0, 1.0),), asks=((101.5, 1.0),))
     return f"synced={sync.is_synced}, best_bid={sync.book.best_bid}, best_ask={sync.book.best_ask}"
@@ -77,7 +79,7 @@ def run_signal_demo() -> str:
         baseline_depth_5bp=100.0,
         synchronizer=BookSynchronizer(),
     )
-    engine.on_depth_update(DepthUpdate(first_update_id=101, final_update_id=101, bids=((100.0, 30.0),)))
+    engine.on_depth_update(DepthUpdate(first_update_id=101, final_update_id=101, prev_final_update_id=100, bids=((100.0, 30.0),)))
     engine.on_depth_update(DepthUpdate(first_update_id=102, final_update_id=102, asks=((100.1, 5.0),)))
     engine.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
     plan = engine.generate_quote_plan(fair_price=100.0)
@@ -90,7 +92,7 @@ def run_mature_demo() -> str:
         baseline_depth_5bp=100.0,
         synchronizer=BookSynchronizer(),
     )
-    signal_engine.on_depth_update(DepthUpdate(first_update_id=101, final_update_id=101, bids=((100.0, 30.0),)))
+    signal_engine.on_depth_update(DepthUpdate(first_update_id=101, final_update_id=101, prev_final_update_id=100, bids=((100.0, 30.0),)))
     signal_engine.on_depth_update(DepthUpdate(first_update_id=102, final_update_id=102, asks=((100.1, 5.0),)))
     signal_engine.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
 
@@ -116,7 +118,7 @@ def run_mature_demo() -> str:
 
 def run_exchange_demo() -> str:
     payload = (
-        '{"e":"depthUpdate","E":1700000000000,"s":"BTCUSDT","U":100,"u":102,'
+        '{"e":"depthUpdate","E":1700000000000,"s":"BTCUSDT","U":100,"u":102,"pu":101,'
         '"b":[["50000.1","1.2"]],"a":[["50001.0","2.5"]]}'
     )
     client = BinanceFuturesClient(depth_parser=BinanceFuturesDepthParser())
@@ -135,8 +137,8 @@ def run_exchange_signal_demo() -> str:
     )
     client = BinanceFuturesClient(depth_parser=BinanceFuturesDepthParser())
 
-    p1 = '{"e":"depthUpdate","E":1,"s":"BTCUSDT","U":101,"u":101,"b":[["100.0","30.0"]],"a":[]}'
-    p2 = '{"e":"depthUpdate","E":2,"s":"BTCUSDT","U":102,"u":102,"b":[],"a":[["100.1","5.0"]]}'
+    p1 = '{"e":"depthUpdate","E":1,"s":"BTCUSDT","U":101,"u":101,"pu":100,"b":[["100.0","30.0"]],"a":[]}'
+    p2 = '{"e":"depthUpdate","E":2,"s":"BTCUSDT","U":102,"u":102,"pu":101,"b":[],"a":[["100.1","5.0"]]}'
 
     signal_engine.on_normalized_depth_event(client.normalize_depth_payload(p1))
     signal_engine.on_normalized_depth_event(client.normalize_depth_payload(p2))
@@ -187,8 +189,8 @@ def run_bridge_demo() -> str:
     )
 
     payloads = [
-        '{"e":"depthUpdate","E":1,"s":"BTCUSDT","U":101,"u":101,"b":[["100.0","30.0"]],"a":[]}',
-        '{"e":"depthUpdate","E":2,"s":"BTCUSDT","U":102,"u":102,"b":[],"a":[["100.1","5.0"]]}',
+        '{"e":"depthUpdate","E":1,"s":"BTCUSDT","U":101,"u":101,"pu":100,"b":[["100.0","30.0"]],"a":[]}',
+        '{"e":"depthUpdate","E":2,"s":"BTCUSDT","U":102,"u":102,"pu":101,"b":[],"a":[["100.1","5.0"]]}',
     ]
     count = bridge.ingest_many(payloads)
     signal_engine.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
@@ -227,8 +229,8 @@ def run_runtime_demo() -> str:
     )
 
     runtime.on_market_payloads([
-        '{"e":"depthUpdate","E":1,"s":"BTCUSDT","U":101,"u":101,"b":[["100.0","30.0"]],"a":[]}',
-        '{"e":"depthUpdate","E":2,"s":"BTCUSDT","U":102,"u":102,"b":[],"a":[["100.1","5.0"]]}',
+        '{"e":"depthUpdate","E":1,"s":"BTCUSDT","U":101,"u":101,"pu":100,"b":[["100.0","30.0"]],"a":[]}',
+        '{"e":"depthUpdate","E":2,"s":"BTCUSDT","U":102,"u":102,"pu":101,"b":[],"a":[["100.1","5.0"]]}',
     ])
     runtime.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
 
@@ -272,6 +274,22 @@ def run_cancel_demo() -> str:
     return f"d1={decisions[0].reason}, d2={decisions[1].reason}, d3={decisions[2].reason}"
 
 
+def run_l2_real_demo() -> str:
+    from pathlib import Path
+    path = Path("data/real_l2_events.jsonl")
+    if not path.exists():
+        return f"File {path} not found. Run scripts/collect_real_l2_data.py first."
+        
+    simulator = create_default_l2_simulator()
+    # Boost theta heavily to get filled during short demo, and relax base depth
+    simulator.runtime.bridge.signal_engine.quote_engine.theta1 = 0.00001
+    simulator.runtime.bridge.signal_engine.quote_engine.theta2 = 0.00005
+    simulator.runtime.bridge.signal_engine.baseline_depth_5bp = 1_000_000_000.0 
+    
+    report = simulator.run(path)
+    return f"l2_real_events={report.event_count}, net_pnl={report.total_net_pnl:.6f}, " \
+           f"avg_hedge_latency={report.avg_hedge_latency_ms:.1f}ms, avg_slippage={report.avg_slippage_bps:.2f}bps"
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="WickHunter dev CLI")
     parser.add_argument("--demo", action="store_true", help="Run state-machine demo flow")
@@ -289,6 +307,7 @@ def main() -> None:
     parser.add_argument("--runtime-demo", action="store_true", help="Run runtime wiring demo")
     parser.add_argument("--exec-demo", action="store_true", help="Run execution orchestration demo")
     parser.add_argument("--cancel-demo", action="store_true", help="Run cancel throttle demo")
+    parser.add_argument("--l2-real-demo", action="store_true", help="Run L2 simulator on real data collected from Binance")
     args = parser.parse_args()
 
     if args.demo:
@@ -321,6 +340,8 @@ def main() -> None:
         print(run_exec_demo())
     elif args.cancel_demo:
         print(run_cancel_demo())
+    elif args.l2_real_demo:
+        print(run_l2_real_demo())
     else:
         parser.print_help()
 

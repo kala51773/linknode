@@ -1,0 +1,307 @@
+test_compute_metrics (test_calculators.TestCalculators.test_compute_metrics) ... ok
+test_empty_book_metrics (test_calculators.TestCalculators.test_empty_book_metrics) ... ok
+test_auto_resume_after_cooldown (test_circuit_breaker.TestCircuitBreaker.test_auto_resume_after_cooldown) ... ok
+test_stays_tripped_without_cooldown (test_circuit_breaker.TestCircuitBreaker.test_stays_tripped_without_cooldown) ... ok
+test_trip_on_exchange_restriction (test_circuit_breaker.TestCircuitBreaker.test_trip_on_exchange_restriction) ... ok
+test_trip_on_latency (test_circuit_breaker.TestCircuitBreaker.test_trip_on_latency) ... ok
+test_run_book_demo_contains_marketdata_fields (test_cli.TestCli.test_run_book_demo_contains_marketdata_fields) ... ERROR
+test_run_bridge_demo_contains_bridge_fields (test_cli.TestCli.test_run_bridge_demo_contains_bridge_fields) ... ERROR
+test_run_cancel_demo_contains_decisions (test_cli.TestCli.test_run_cancel_demo_contains_decisions) ... ok
+test_run_demo_contains_key_context (test_cli.TestCli.test_run_demo_contains_key_context) ... ok
+test_run_exchange_demo_contains_exchange_fields (test_cli.TestCli.test_run_exchange_demo_contains_exchange_fields) ... ok
+test_run_exchange_signal_demo_contains_pipeline_fields (test_cli.TestCli.test_run_exchange_signal_demo_contains_pipeline_fields) ... ERROR
+test_run_exec_demo_contains_execution_fields (test_cli.TestCli.test_run_exec_demo_contains_execution_fields) ... ok
+test_run_m3_demo_contains_report_fields (test_cli.TestCli.test_run_m3_demo_contains_report_fields) ... ok
+test_run_m3_replay_file_from_jsonl (test_cli.TestCli.test_run_m3_replay_file_from_jsonl) ... ok
+test_run_mature_demo_contains_backend_fields (test_cli.TestCli.test_run_mature_demo_contains_backend_fields) ... ERROR
+test_run_portfolio_demo_contains_portfolio_fields (test_cli.TestCli.test_run_portfolio_demo_contains_portfolio_fields) ... ok
+test_run_quote_demo_contains_quote_fields (test_cli.TestCli.test_run_quote_demo_contains_quote_fields) ... ok
+test_run_runtime_demo_contains_runtime_fields (test_cli.TestCli.test_run_runtime_demo_contains_runtime_fields) ... ERROR
+test_run_signal_demo_contains_signal_fields (test_cli.TestCli.test_run_signal_demo_contains_signal_fields) ... ERROR
+test_run_sync_demo_contains_sync_fields (test_cli.TestCli.test_run_sync_demo_contains_sync_fields) ... ERROR
+test_client_wraps_parser (test_exchange_binance.TestBinanceFuturesDepthParser.test_client_wraps_parser) ... ok
+test_parse_depth_event (test_exchange_binance.TestBinanceFuturesDepthParser.test_parse_depth_event) ... ok
+test_ingest_many_feeds_signal_engine (test_exchange_bridge.TestExchangeBridge.test_ingest_many_feeds_signal_engine) ... ERROR
+test_cancel_decision_uses_throttle (test_execution.TestExecution.test_cancel_decision_uses_throttle) ... ok
+test_generate_buy_hedge_for_sell_fill (test_execution.TestExecution.test_generate_buy_hedge_for_sell_fill) ... ok
+test_generate_hedge_order_when_risk_ok (test_execution.TestExecution.test_generate_hedge_order_when_risk_ok) ... ok
+test_reject_when_risk_limit_hit (test_execution.TestExecution.test_reject_when_risk_limit_hit) ... ok
+test_negative_notional_rejected (test_latency_model.TestLatencyModel.test_negative_notional_rejected) ... ok
+test_simulate_latency_and_slippage (test_latency_model.TestLatencyModel.test_simulate_latency_and_slippage) ... ok
+test_reject_unarmed_plan (test_mature_engine.TestMatureEngineAdapter.test_reject_unarmed_plan) ... ok
+test_submit_armed_plan_to_nautilus_adapter (test_mature_engine.TestMatureEngineAdapter.test_submit_armed_plan_to_nautilus_adapter) ... ok
+test_submit_hedge_order (test_mature_engine.TestMatureEngineAdapter.test_submit_hedge_order) ... ok
+test_submit_quote_and_hedge_to_backend (test_orchestrator.TestCoreOrchestrator.test_submit_quote_and_hedge_to_backend) ... ERROR
+test_gap_raises (test_orderbook.TestOrderBook.test_gap_raises) ... ok
+test_snapshot_then_diff_updates (test_orderbook.TestOrderBook.test_snapshot_then_diff_updates) ... ERROR
+test_stale_update_ignored (test_orderbook.TestOrderBook.test_stale_update_ignored) ... ok
+test_accumulate_and_reduce_position (test_portfolio.TestPortfolio.test_accumulate_and_reduce_position) ... ok
+test_flip_position_sets_new_avg (test_portfolio.TestPortfolio.test_flip_position_sets_new_avg) ... ok
+test_gross_notional (test_portfolio.TestPortfolio.test_gross_notional) ... ok
+test_arm_and_build_levels (test_quote_engine.TestQuoteEngine.test_arm_and_build_levels) ... ok
+test_not_armed_when_depth_not_collapsed (test_quote_engine.TestQuoteEngine.test_not_armed_when_depth_not_collapsed) ... ok
+test_events_are_sorted_by_ts (test_replay.TestReplay.test_events_are_sorted_by_ts) ... ok
+test_load_jsonl_and_sort (test_replay.TestReplay.test_load_jsonl_and_sort) ... ok
+test_build_event_report (test_report.TestReport.test_build_event_report) ... ok
+test_runtime_step_blocked_by_circuit_breaker (test_runtime.TestRuntime.test_runtime_step_blocked_by_circuit_breaker) ... ok
+test_runtime_step_success (test_runtime.TestRuntime.test_runtime_step_success) ... ERROR
+test_runtime_tracks_sell_fill_as_short_position (test_runtime.TestRuntime.test_runtime_tracks_sell_fill_as_short_position) ... ERROR
+test_accept_normalized_depth_event (test_signal_engine.TestSignalEngine.test_accept_normalized_depth_event) ... ERROR
+test_plan_blocked_before_sync (test_signal_engine.TestSignalEngine.test_plan_blocked_before_sync) ... ok
+test_plan_generated_after_sync (test_signal_engine.TestSignalEngine.test_plan_generated_after_sync) ... ERROR
+test_happy_path (test_state_machine.TestStateMachine.test_happy_path) ... ok
+test_invalid_transition (test_state_machine.TestStateMachine.test_invalid_transition) ... ok
+test_buffer_then_snapshot_replay (test_synchronizer.TestBookSynchronizer.test_buffer_then_snapshot_replay) ... ERROR
+test_drop_stale_buffer_updates (test_synchronizer.TestBookSynchronizer.test_drop_stale_buffer_updates) ... ERROR
+test_reset_clears_sync_state (test_synchronizer.TestBookSynchronizer.test_reset_clears_sync_state) ... ERROR
+test_allow_after_window_rolls (test_throttle.TestCancelThrottle.test_allow_after_window_rolls) ... ok
+test_reject_before_min_live_time (test_throttle.TestCancelThrottle.test_reject_before_min_live_time) ... ok
+test_reject_when_cancel_rate_too_high (test_throttle.TestCancelThrottle.test_reject_when_cancel_rate_too_high) ... ok
+
+======================================================================
+ERROR: test_run_book_demo_contains_marketdata_fields (test_cli.TestCli.test_run_book_demo_contains_marketdata_fields)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex\linknode\tests\test_cli.py", line 32, in test_run_book_demo_contains_marketdata_fields
+    output = run_book_demo()
+             ^^^^^^^^^^^^^^^
+  File "D:\codex\linknode\src\wickhunter\cli\main.py", line 52, in run_book_demo
+    book.apply(DepthUpdate(first_update_id=101, final_update_id=101, bids=((100.0, 1.0),), asks=()))
+  File "D:\codex\linknode\src\wickhunter\marketdata\orderbook.py", line 56, in apply
+    raise ValueError(
+ValueError: sequence gap detected: last=100, incoming=[U:101, u:101, pu:0] from_snapshot=True
+
+======================================================================
+ERROR: test_run_bridge_demo_contains_bridge_fields (test_cli.TestCli.test_run_bridge_demo_contains_bridge_fields)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex\linknode\tests\test_cli.py", line 94, in test_run_bridge_demo_contains_bridge_fields
+    output = run_bridge_demo()
+             ^^^^^^^^^^^^^^^^^
+  File "D:\codex\linknode\src\wickhunter\cli\main.py", line 196, in run_bridge_demo
+    signal_engine.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
+  File "D:\codex\linknode\src\wickhunter\strategy\signal_engine.py", line 39, in on_snapshot
+    self.synchronizer.apply_snapshot(last_update_id=last_update_id, bids=bids, asks=asks)
+  File "D:\codex\linknode\src\wickhunter\marketdata\synchronizer.py", line 38, in apply_snapshot
+    self.book.apply(update)
+  File "D:\codex\linknode\src\wickhunter\marketdata\orderbook.py", line 56, in apply
+    raise ValueError(
+ValueError: sequence gap detected: last=100, incoming=[U:101, u:101, pu:0] from_snapshot=True
+
+======================================================================
+ERROR: test_run_exchange_signal_demo_contains_pipeline_fields (test_cli.TestCli.test_run_exchange_signal_demo_contains_pipeline_fields)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex\linknode\tests\test_cli.py", line 68, in test_run_exchange_signal_demo_contains_pipeline_fields
+    output = run_exchange_signal_demo()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\codex\linknode\src\wickhunter\cli\main.py", line 145, in run_exchange_signal_demo
+    signal_engine.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
+  File "D:\codex\linknode\src\wickhunter\strategy\signal_engine.py", line 39, in on_snapshot
+    self.synchronizer.apply_snapshot(last_update_id=last_update_id, bids=bids, asks=asks)
+  File "D:\codex\linknode\src\wickhunter\marketdata\synchronizer.py", line 38, in apply_snapshot
+    self.book.apply(update)
+  File "D:\codex\linknode\src\wickhunter\marketdata\orderbook.py", line 56, in apply
+    raise ValueError(
+ValueError: sequence gap detected: last=100, incoming=[U:101, u:101, pu:0] from_snapshot=True
+
+======================================================================
+ERROR: test_run_mature_demo_contains_backend_fields (test_cli.TestCli.test_run_mature_demo_contains_backend_fields)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex\linknode\tests\test_cli.py", line 56, in test_run_mature_demo_contains_backend_fields
+    output = run_mature_demo()
+             ^^^^^^^^^^^^^^^^^
+  File "D:\codex\linknode\src\wickhunter\cli\main.py", line 97, in run_mature_demo
+    signal_engine.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
+  File "D:\codex\linknode\src\wickhunter\strategy\signal_engine.py", line 39, in on_snapshot
+    self.synchronizer.apply_snapshot(last_update_id=last_update_id, bids=bids, asks=asks)
+  File "D:\codex\linknode\src\wickhunter\marketdata\synchronizer.py", line 38, in apply_snapshot
+    self.book.apply(update)
+  File "D:\codex\linknode\src\wickhunter\marketdata\orderbook.py", line 56, in apply
+    raise ValueError(
+ValueError: sequence gap detected: last=100, incoming=[U:101, u:101, pu:0] from_snapshot=True
+
+======================================================================
+ERROR: test_run_runtime_demo_contains_runtime_fields (test_cli.TestCli.test_run_runtime_demo_contains_runtime_fields)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex\linknode\tests\test_cli.py", line 105, in test_run_runtime_demo_contains_runtime_fields
+    output = run_runtime_demo()
+             ^^^^^^^^^^^^^^^^^^
+  File "D:\codex\linknode\src\wickhunter\cli\main.py", line 235, in run_runtime_demo
+    runtime.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
+  File "D:\codex\linknode\src\wickhunter\runtime.py", line 38, in on_snapshot
+    self.bridge.signal_engine.on_snapshot(last_update_id=last_update_id, bids=bids, asks=asks)
+  File "D:\codex\linknode\src\wickhunter\strategy\signal_engine.py", line 39, in on_snapshot
+    self.synchronizer.apply_snapshot(last_update_id=last_update_id, bids=bids, asks=asks)
+  File "D:\codex\linknode\src\wickhunter\marketdata\synchronizer.py", line 38, in apply_snapshot
+    self.book.apply(update)
+  File "D:\codex\linknode\src\wickhunter\marketdata\orderbook.py", line 56, in apply
+    raise ValueError(
+ValueError: sequence gap detected: last=100, incoming=[U:101, u:101, pu:0] from_snapshot=True
+
+======================================================================
+ERROR: test_run_signal_demo_contains_signal_fields (test_cli.TestCli.test_run_signal_demo_contains_signal_fields)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex\linknode\tests\test_cli.py", line 50, in test_run_signal_demo_contains_signal_fields
+    output = run_signal_demo()
+             ^^^^^^^^^^^^^^^^^
+  File "D:\codex\linknode\src\wickhunter\cli\main.py", line 84, in run_signal_demo
+    engine.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
+  File "D:\codex\linknode\src\wickhunter\strategy\signal_engine.py", line 39, in on_snapshot
+    self.synchronizer.apply_snapshot(last_update_id=last_update_id, bids=bids, asks=asks)
+  File "D:\codex\linknode\src\wickhunter\marketdata\synchronizer.py", line 38, in apply_snapshot
+    self.book.apply(update)
+  File "D:\codex\linknode\src\wickhunter\marketdata\orderbook.py", line 56, in apply
+    raise ValueError(
+ValueError: sequence gap detected: last=100, incoming=[U:101, u:101, pu:0] from_snapshot=True
+
+======================================================================
+ERROR: test_run_sync_demo_contains_sync_fields (test_cli.TestCli.test_run_sync_demo_contains_sync_fields)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex\linknode\tests\test_cli.py", line 38, in test_run_sync_demo_contains_sync_fields
+    output = run_sync_demo()
+             ^^^^^^^^^^^^^^^
+  File "D:\codex\linknode\src\wickhunter\cli\main.py", line 62, in run_sync_demo
+    sync.apply_snapshot(last_update_id=100, bids=((99.0, 1.0),), asks=((101.5, 1.0),))
+  File "D:\codex\linknode\src\wickhunter\marketdata\synchronizer.py", line 38, in apply_snapshot
+    self.book.apply(update)
+  File "D:\codex\linknode\src\wickhunter\marketdata\orderbook.py", line 56, in apply
+    raise ValueError(
+ValueError: sequence gap detected: last=100, incoming=[U:101, u:101, pu:0] from_snapshot=True
+
+======================================================================
+ERROR: test_ingest_many_feeds_signal_engine (test_exchange_bridge.TestExchangeBridge.test_ingest_many_feeds_signal_engine)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex\linknode\tests\test_exchange_bridge.py", line 28, in test_ingest_many_feeds_signal_engine
+    signal_engine.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
+  File "D:\codex\linknode\src\wickhunter\strategy\signal_engine.py", line 39, in on_snapshot
+    self.synchronizer.apply_snapshot(last_update_id=last_update_id, bids=bids, asks=asks)
+  File "D:\codex\linknode\src\wickhunter\marketdata\synchronizer.py", line 38, in apply_snapshot
+    self.book.apply(update)
+  File "D:\codex\linknode\src\wickhunter\marketdata\orderbook.py", line 56, in apply
+    raise ValueError(
+ValueError: sequence gap detected: last=100, incoming=[U:101, u:101, pu:0] from_snapshot=True
+
+======================================================================
+ERROR: test_submit_quote_and_hedge_to_backend (test_orchestrator.TestCoreOrchestrator.test_submit_quote_and_hedge_to_backend)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex\linknode\tests\test_orchestrator.py", line 25, in test_submit_quote_and_hedge_to_backend
+    signal_engine.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
+  File "D:\codex\linknode\src\wickhunter\strategy\signal_engine.py", line 39, in on_snapshot
+    self.synchronizer.apply_snapshot(last_update_id=last_update_id, bids=bids, asks=asks)
+  File "D:\codex\linknode\src\wickhunter\marketdata\synchronizer.py", line 38, in apply_snapshot
+    self.book.apply(update)
+  File "D:\codex\linknode\src\wickhunter\marketdata\orderbook.py", line 56, in apply
+    raise ValueError(
+ValueError: sequence gap detected: last=100, incoming=[U:101, u:101, pu:0] from_snapshot=True
+
+======================================================================
+ERROR: test_snapshot_then_diff_updates (test_orderbook.TestOrderBook.test_snapshot_then_diff_updates)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex\linknode\tests\test_orderbook.py", line 15, in test_snapshot_then_diff_updates
+    book.apply(DepthUpdate(first_update_id=11, final_update_id=11, bids=((100.0, 3.0),), asks=()))
+  File "D:\codex\linknode\src\wickhunter\marketdata\orderbook.py", line 56, in apply
+    raise ValueError(
+ValueError: sequence gap detected: last=10, incoming=[U:11, u:11, pu:0] from_snapshot=True
+
+======================================================================
+ERROR: test_runtime_step_success (test_runtime.TestRuntime.test_runtime_step_success)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex\linknode\tests\test_runtime.py", line 45, in test_runtime_step_success
+    runtime.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
+  File "D:\codex\linknode\src\wickhunter\runtime.py", line 38, in on_snapshot
+    self.bridge.signal_engine.on_snapshot(last_update_id=last_update_id, bids=bids, asks=asks)
+  File "D:\codex\linknode\src\wickhunter\strategy\signal_engine.py", line 39, in on_snapshot
+    self.synchronizer.apply_snapshot(last_update_id=last_update_id, bids=bids, asks=asks)
+  File "D:\codex\linknode\src\wickhunter\marketdata\synchronizer.py", line 38, in apply_snapshot
+    self.book.apply(update)
+  File "D:\codex\linknode\src\wickhunter\marketdata\orderbook.py", line 56, in apply
+    raise ValueError(
+ValueError: sequence gap detected: last=100, incoming=[U:101, u:101, pu:0] from_snapshot=True
+
+======================================================================
+ERROR: test_runtime_tracks_sell_fill_as_short_position (test_runtime.TestRuntime.test_runtime_tracks_sell_fill_as_short_position)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex\linknode\tests\test_runtime.py", line 67, in test_runtime_tracks_sell_fill_as_short_position
+    runtime.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
+  File "D:\codex\linknode\src\wickhunter\runtime.py", line 38, in on_snapshot
+    self.bridge.signal_engine.on_snapshot(last_update_id=last_update_id, bids=bids, asks=asks)
+  File "D:\codex\linknode\src\wickhunter\strategy\signal_engine.py", line 39, in on_snapshot
+    self.synchronizer.apply_snapshot(last_update_id=last_update_id, bids=bids, asks=asks)
+  File "D:\codex\linknode\src\wickhunter\marketdata\synchronizer.py", line 38, in apply_snapshot
+    self.book.apply(update)
+  File "D:\codex\linknode\src\wickhunter\marketdata\orderbook.py", line 56, in apply
+    raise ValueError(
+ValueError: sequence gap detected: last=100, incoming=[U:101, u:101, pu:0] from_snapshot=True
+
+======================================================================
+ERROR: test_accept_normalized_depth_event (test_signal_engine.TestSignalEngine.test_accept_normalized_depth_event)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex\linknode\tests\test_signal_engine.py", line 45, in test_accept_normalized_depth_event
+    NormalizedDepthEvent(
+TypeError: NormalizedDepthEvent.__init__() missing 1 required positional argument: 'prev_final_update_id'
+
+======================================================================
+ERROR: test_plan_generated_after_sync (test_signal_engine.TestSignalEngine.test_plan_generated_after_sync)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex\linknode\tests\test_signal_engine.py", line 31, in test_plan_generated_after_sync
+    engine.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
+  File "D:\codex\linknode\src\wickhunter\strategy\signal_engine.py", line 39, in on_snapshot
+    self.synchronizer.apply_snapshot(last_update_id=last_update_id, bids=bids, asks=asks)
+  File "D:\codex\linknode\src\wickhunter\marketdata\synchronizer.py", line 38, in apply_snapshot
+    self.book.apply(update)
+  File "D:\codex\linknode\src\wickhunter\marketdata\orderbook.py", line 56, in apply
+    raise ValueError(
+ValueError: sequence gap detected: last=100, incoming=[U:101, u:101, pu:0] from_snapshot=True
+
+======================================================================
+ERROR: test_buffer_then_snapshot_replay (test_synchronizer.TestBookSynchronizer.test_buffer_then_snapshot_replay)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex\linknode\tests\test_synchronizer.py", line 14, in test_buffer_then_snapshot_replay
+    sync.apply_snapshot(
+  File "D:\codex\linknode\src\wickhunter\marketdata\synchronizer.py", line 38, in apply_snapshot
+    self.book.apply(update)
+  File "D:\codex\linknode\src\wickhunter\marketdata\orderbook.py", line 56, in apply
+    raise ValueError(
+ValueError: sequence gap detected: last=100, incoming=[U:101, u:101, pu:0] from_snapshot=True
+
+======================================================================
+ERROR: test_drop_stale_buffer_updates (test_synchronizer.TestBookSynchronizer.test_drop_stale_buffer_updates)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex\linknode\tests\test_synchronizer.py", line 30, in test_drop_stale_buffer_updates
+    sync.apply_snapshot(last_update_id=100, bids=((99.0, 1.0),), asks=((101.0, 1.0),))
+  File "D:\codex\linknode\src\wickhunter\marketdata\synchronizer.py", line 38, in apply_snapshot
+    self.book.apply(update)
+  File "D:\codex\linknode\src\wickhunter\marketdata\orderbook.py", line 56, in apply
+    raise ValueError(
+ValueError: sequence gap detected: last=100, incoming=[U:101, u:101, pu:0] from_snapshot=True
+
+======================================================================
+ERROR: test_reset_clears_sync_state (test_synchronizer.TestBookSynchronizer.test_reset_clears_sync_state)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex\linknode\tests\test_synchronizer.py", line 37, in test_reset_clears_sync_state
+    sync.apply_snapshot(last_update_id=100, bids=((99.0, 1.0),), asks=((101.0, 1.0),))
+  File "D:\codex\linknode\src\wickhunter\marketdata\synchronizer.py", line 38, in apply_snapshot
+    self.book.apply(update)
+  File "D:\codex\linknode\src\wickhunter\marketdata\orderbook.py", line 56, in apply
+    raise ValueError(
+ValueError: sequence gap detected: last=100, incoming=[U:101, u:101, pu:0] from_snapshot=True
+
+----------------------------------------------------------------------
+Ran 59 tests in 0.015s
+
+FAILED (errors=17)

@@ -39,8 +39,8 @@ class TestRuntime(unittest.TestCase):
     def test_runtime_step_success(self) -> None:
         runtime = self._build_runtime()
         runtime.on_market_payloads([
-            '{"e":"depthUpdate","E":1,"s":"BTCUSDT","U":101,"u":101,"b":[["100.0","30.0"]],"a":[]}',
-            '{"e":"depthUpdate","E":2,"s":"BTCUSDT","U":102,"u":102,"b":[],"a":[["100.1","5.0"]]}',
+            '{"e":"depthUpdate","E":1,"s":"BTCUSDT","U":101,"u":101,"pu":100,"b":[["100.0","30.0"]],"a":[]}',
+            '{"e":"depthUpdate","E":2,"s":"BTCUSDT","U":102,"u":102,"pu":101,"b":[],"a":[["100.1","5.0"]]}',
         ])
         runtime.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
 
@@ -61,8 +61,8 @@ class TestRuntime(unittest.TestCase):
     def test_runtime_tracks_sell_fill_as_short_position(self) -> None:
         runtime = self._build_runtime()
         runtime.on_market_payloads([
-            '{"e":"depthUpdate","E":1,"s":"BTCUSDT","U":101,"u":101,"b":[["100.0","30.0"]],"a":[]}',
-            '{"e":"depthUpdate","E":2,"s":"BTCUSDT","U":102,"u":102,"b":[],"a":[["100.1","5.0"]]}',
+            '{"e":"depthUpdate","E":1,"s":"BTCUSDT","U":101,"u":101,"pu":100,"b":[["100.0","30.0"]],"a":[]}',
+            '{"e":"depthUpdate","E":2,"s":"BTCUSDT","U":102,"u":102,"pu":101,"b":[],"a":[["100.1","5.0"]]}',
         ])
         runtime.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
 

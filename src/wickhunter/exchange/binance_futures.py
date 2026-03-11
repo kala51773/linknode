@@ -13,10 +13,11 @@ class BinanceFuturesDepthParser:
     def parse_depth_event(self, payload: str) -> NormalizedDepthEvent:
         raw = json.loads(payload)
 
-        # Binance futures diff stream fields: e, E, s, U, u, b, a
+        # Binance futures diff stream fields: e, E, s, U, u, pu, b, a
         symbol = raw["s"]
         first_update_id = int(raw["U"])
         final_update_id = int(raw["u"])
+        prev_final_update_id = int(raw.get("pu", 0))
         event_ts_ms = int(raw["E"])
 
         bids = tuple((float(px), float(qty)) for px, qty in raw.get("b", []))
@@ -27,6 +28,7 @@ class BinanceFuturesDepthParser:
             symbol=symbol,
             first_update_id=first_update_id,
             final_update_id=final_update_id,
+            prev_final_update_id=prev_final_update_id,
             bids=bids,
             asks=asks,
             event_ts_ms=event_ts_ms,

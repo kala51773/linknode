@@ -1,6 +1,6 @@
-import tempfile
 import unittest
 from pathlib import Path
+from uuid import uuid4
 
 from wickhunter.cli.main import (
     run_book_demo,
@@ -78,8 +78,8 @@ class TestCli(unittest.TestCase):
 
 
     def test_run_m3_replay_file_from_jsonl(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "events.jsonl"
+        path = Path(__file__).parent / f"tmp_cli_replay_{uuid4().hex}.jsonl"
+        try:
             path.write_text(
                 '{"ts_ms": 3, "event_type": "fill", "payload": {}}\n'
                 '{"ts_ms": 1, "event_type": "fill", "payload": {}}\n',
@@ -89,6 +89,8 @@ class TestCli(unittest.TestCase):
             self.assertIn("m3_events=2", output)
             self.assertIn("first_ts=1", output)
             self.assertIn("last_ts=3", output)
+        finally:
+            path.unlink(missing_ok=True)
 
     def test_run_bridge_demo_contains_bridge_fields(self) -> None:
         output = run_bridge_demo()

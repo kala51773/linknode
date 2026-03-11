@@ -7,6 +7,7 @@ class DepthUpdate:
 
     first_update_id: int
     final_update_id: int
+    prev_final_update_id: int = 0
     bids: tuple[tuple[float, float], ...] = ()
     asks: tuple[tuple[float, float], ...] = ()
 
@@ -16,6 +17,7 @@ class LocalOrderBook:
     """Lightweight L2 order book with snapshot + diff synchronization rules."""
 
     last_update_id: int | None = None
+    _from_snapshot: bool = False
     bids: dict[float, float] = field(default_factory=dict)
     asks: dict[float, float] = field(default_factory=dict)
 
@@ -27,30 +29,47 @@ class LocalOrderBook:
         asks: tuple[tuple[float, float], ...],
     ) -> None:
         self.last_update_id = last_update_id
+        self._from_snapshot = True
         self.bids = {price: size for price, size in bids if size > 0}
         self.asks = {price: size for price, size in asks if size > 0}
 
     def can_accept(self, update: DepthUpdate) -> bool:
-        if self.last_update_id is None:
+        last_id = self.last_update_id
+        if last_id is None:
             return False
-        return update.first_update_id <= self.last_update_id + 1 <= update.final_update_id
+
+        next_expected_id = last_id + 1
+        if self._from_snapshot:
+            # Binance bootstrap rule: first diff after snapshot must include
+            # snapshot lastUpdateId + 1 in [U, u].
+            return update.first_update_id <= next_expected_id <= update.final_update_id
+
+        # Prefer strict Binance continuity when pu is present.
+        if update.prev_final_update_id > 0:
+            return update.prev_final_update_id == last_id
+
+        # Compatibility path for feeds/tests without pu.
+        return update.first_update_id <= next_expected_id <= update.final_update_id
 
     def apply(self, update: DepthUpdate) -> None:
-        if self.last_update_id is None:
+        last_id = self.last_update_id
+        if last_id is None:
             raise ValueError("snapshot must be loaded before diff updates")
 
-        if update.final_update_id <= self.last_update_id:
+        if update.final_update_id <= last_id:
             return
 
         if not self.can_accept(update):
             raise ValueError(
-                f"sequence gap detected: last={self.last_update_id}, "
-                f"incoming=[{update.first_update_id}, {update.final_update_id}]"
+                f"sequence gap detected: last={last_id}, "
+                f"incoming=[U:{update.first_update_id}, u:{update.final_update_id}, pu:{update.prev_final_update_id}] "
+                f"from_snapshot={self._from_snapshot}"
             )
 
         self._upsert_levels(self.bids, update.bids)
         self._upsert_levels(self.asks, update.asks)
         self.last_update_id = update.final_update_id
+        self._from_snapshot = False
 
     @staticmethod
     def _upsert_levels(side: dict[float, float], levels: tuple[tuple[float, float], ...]) -> None:

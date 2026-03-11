@@ -8,7 +8,7 @@ class TestBookSynchronizer(unittest.TestCase):
     def test_buffer_then_snapshot_replay(self) -> None:
         sync = BookSynchronizer()
 
-        sync.on_depth_update(DepthUpdate(first_update_id=101, final_update_id=101, bids=((100.0, 1.0),)))
+        sync.on_depth_update(DepthUpdate(first_update_id=101, final_update_id=101, prev_final_update_id=100, bids=((100.0, 1.0),)))
         sync.on_depth_update(DepthUpdate(first_update_id=102, final_update_id=102, asks=((101.0, 3.0),)))
 
         sync.apply_snapshot(
@@ -25,7 +25,7 @@ class TestBookSynchronizer(unittest.TestCase):
         sync = BookSynchronizer()
         sync.on_depth_update(DepthUpdate(first_update_id=90, final_update_id=95, bids=((90.0, 1.0),)))
         sync.on_depth_update(DepthUpdate(first_update_id=96, final_update_id=99, bids=((91.0, 1.0),)))
-        sync.on_depth_update(DepthUpdate(first_update_id=101, final_update_id=101, bids=((100.0, 1.0),)))
+        sync.on_depth_update(DepthUpdate(first_update_id=101, final_update_id=101, prev_final_update_id=100, bids=((100.0, 1.0),)))
 
         sync.apply_snapshot(last_update_id=100, bids=((99.0, 1.0),), asks=((101.0, 1.0),))
 
@@ -33,7 +33,7 @@ class TestBookSynchronizer(unittest.TestCase):
 
     def test_reset_clears_sync_state(self) -> None:
         sync = BookSynchronizer()
-        sync.on_depth_update(DepthUpdate(first_update_id=101, final_update_id=101, bids=((100.0, 1.0),)))
+        sync.on_depth_update(DepthUpdate(first_update_id=101, final_update_id=101, prev_final_update_id=100, bids=((100.0, 1.0),)))
         sync.apply_snapshot(last_update_id=100, bids=((99.0, 1.0),), asks=((101.0, 1.0),))
         self.assertTrue(sync.is_synced)
 

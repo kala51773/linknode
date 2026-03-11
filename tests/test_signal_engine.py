@@ -26,7 +26,7 @@ class TestSignalEngine(unittest.TestCase):
             synchronizer=BookSynchronizer(),
         )
 
-        engine.on_depth_update(DepthUpdate(first_update_id=101, final_update_id=101, bids=((100.0, 30.0),)))
+        engine.on_depth_update(DepthUpdate(first_update_id=101, final_update_id=101, prev_final_update_id=100, bids=((100.0, 30.0),)))
         engine.on_depth_update(DepthUpdate(first_update_id=102, final_update_id=102, asks=((100.1, 5.0),)))
         engine.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
 

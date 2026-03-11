@@ -10,3 +10,4 @@ class NormalizedDepthEvent:
     bids: tuple[tuple[float, float], ...]
     asks: tuple[tuple[float, float], ...]
     event_ts_ms: int
+    prev_final_update_id: int = 0

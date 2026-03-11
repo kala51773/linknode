@@ -6,7 +6,7 @@ from wickhunter.exchange.binance_futures import BinanceFuturesClient, BinanceFut
 class TestBinanceFuturesDepthParser(unittest.TestCase):
     def test_parse_depth_event(self) -> None:
         payload = (
-            '{"e":"depthUpdate","E":1700000000000,"s":"BTCUSDT","U":100,"u":102,'
+            '{"e":"depthUpdate","E":1700000000000,"s":"BTCUSDT","U":100,"u":102,"pu":101,'
             '"b":[["50000.1","1.2"],["50000.0","0"]],"a":[["50001.0","2.5"]]}'
         )
 
