@@ -128,7 +128,7 @@ class TestCli(unittest.TestCase):
             self.assertIn("skipped_ratio=0.5", output)
 
 
-    @patch("wickhunter.cli.main.fetch_binance_futures_depth_snapshot")
+    @patch("wickhunter.cli.main.fetch_binance_futures_depth_snapshot_with_fallback")
     @patch("wickhunter.cli.main.save_snapshot_as_replay_jsonl")
     def test_run_download_l2_snapshot(self, mock_save, mock_fetch) -> None:
         mock_fetch.return_value = type("Snap", (), {
@@ -136,12 +136,14 @@ class TestCli(unittest.TestCase):
             "last_update_id": 123,
             "bids": ((100.0, 1.0),),
             "asks": ((100.1, 2.0),),
+            "source_url": "https://fapi1.binance.com/fapi/v1/depth?...",
         })()
         mock_save.return_value = "data/l2_snapshot.jsonl"
 
         output = run_download_l2_snapshot("BTCUSDT", "data/l2_snapshot.jsonl")
         self.assertIn("snapshot_saved=data/l2_snapshot.jsonl", output)
         self.assertIn("symbol=BTCUSDT", output)
+        self.assertIn("source=https://fapi1.binance.com", output)
 
     def test_run_bridge_demo_contains_bridge_fields(self) -> None:
         output = run_bridge_demo()

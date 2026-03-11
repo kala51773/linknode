@@ -74,3 +74,5 @@ python -m unittest discover -s tests -v
 说明：仓库根目录新增 `sitecustomize.py`，在本地直接执行 `python -m unittest ...` 时会自动把 `src/` 注入 `sys.path`，从而减少环境变量配置成本。
 
 提交规范见 `docs/commit_conventions.md`（包含 commit message 建议、PR 内容模板与远程推送步骤）。
+
+说明：`--download-l2-snapshot` 默认会优先使用 `--l2-base-url`，并自动回退尝试 `fapi1/fapi2/fapi3` 域名。

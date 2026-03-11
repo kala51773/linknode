@@ -5,6 +5,7 @@ from wickhunter.backtest.runner import BacktestResult, BacktestRunner
 from wickhunter.backtest.l2_data import (
     BinanceDepthSnapshot,
     fetch_binance_futures_depth_snapshot,
+    fetch_binance_futures_depth_snapshot_with_fallback,
     save_snapshot_as_replay_jsonl,
 )
 
@@ -15,5 +16,6 @@ __all__ = [
     "BacktestRunner",
     "BinanceDepthSnapshot",
     "fetch_binance_futures_depth_snapshot",
+    "fetch_binance_futures_depth_snapshot_with_fallback",
     "save_snapshot_as_replay_jsonl",
 ]

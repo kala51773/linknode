@@ -3,7 +3,10 @@ import argparse
 from wickhunter.analytics.report import EventPnL, build_event_report
 from wickhunter.backtest.replay import EventReplayer, ReplayEvent
 from wickhunter.backtest.runner import BacktestRunner
-from wickhunter.backtest.l2_data import fetch_binance_futures_depth_snapshot, save_snapshot_as_replay_jsonl
+from wickhunter.backtest.l2_data import (
+    fetch_binance_futures_depth_snapshot_with_fallback,
+    save_snapshot_as_replay_jsonl,
+)
 from wickhunter.common.config import RiskLimits, TradingConfig
 from wickhunter.common.events import FillEvent
 from wickhunter.core.mature_engine import NautilusTraderAdapter
@@ -193,11 +196,14 @@ def run_backtest_file(path: str, *, strict: bool = True) -> str:
 
 
 def run_download_l2_snapshot(symbol: str, output_path: str, *, base_url: str = "https://fapi.binance.com") -> str:
-    snapshot = fetch_binance_futures_depth_snapshot(symbol, base_url=base_url)
+    base_candidates = (base_url, "https://fapi1.binance.com", "https://fapi2.binance.com", "https://fapi3.binance.com")
+    deduped = tuple(dict.fromkeys(base_candidates))
+    snapshot = fetch_binance_futures_depth_snapshot_with_fallback(symbol, base_urls=deduped)
     saved = save_snapshot_as_replay_jsonl(snapshot, output_path)
     return (
         f"snapshot_saved={saved}, symbol={snapshot.symbol}, "
-        f"last_update_id={snapshot.last_update_id}, bids={len(snapshot.bids)}, asks={len(snapshot.asks)}"
+        f"last_update_id={snapshot.last_update_id}, bids={len(snapshot.bids)}, asks={len(snapshot.asks)}, "
+        f"source={snapshot.source_url}"
     )
 
 def run_bridge_demo() -> str:
