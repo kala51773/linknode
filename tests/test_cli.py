@@ -7,6 +7,7 @@ from wickhunter.cli.main import (
     run_book_demo,
     run_bridge_demo,
     run_download_l2_snapshot,
+    run_convert_depth_jsonl,
     run_cancel_demo,
     run_demo,
     run_exchange_demo,
@@ -144,6 +145,21 @@ class TestCli(unittest.TestCase):
         self.assertIn("snapshot_saved=data/l2_snapshot.jsonl", output)
         self.assertIn("symbol=BTCUSDT", output)
         self.assertIn("source=https://fapi1.binance.com", output)
+
+
+    def test_run_convert_depth_jsonl(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "raw.jsonl"
+            dst = Path(tmp) / "replay.jsonl"
+            src.write_text(
+                '{"e":"depthUpdate","E":1,"s":"BTCUSDT","U":101,"u":101,"b":[],"a":[]}\n'
+                '{"invalid":true}\n',
+                encoding="utf-8",
+            )
+            output = run_convert_depth_jsonl(str(src), str(dst), strict=False)
+            self.assertIn("converted_total=2", output)
+            self.assertIn("written=1", output)
+            self.assertIn("skipped=1", output)
 
     def test_run_bridge_demo_contains_bridge_fields(self) -> None:
         output = run_bridge_demo()

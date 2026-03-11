@@ -3,6 +3,7 @@ import argparse
 from wickhunter.analytics.report import EventPnL, build_event_report
 from wickhunter.backtest.replay import EventReplayer, ReplayEvent
 from wickhunter.backtest.runner import BacktestRunner
+from wickhunter.backtest.l2_convert import convert_binance_depth_jsonl_to_replay
 from wickhunter.backtest.l2_data import (
     fetch_binance_futures_depth_snapshot_with_fallback,
     save_snapshot_as_replay_jsonl,
@@ -206,6 +207,15 @@ def run_download_l2_snapshot(symbol: str, output_path: str, *, base_url: str = "
         f"source={snapshot.source_url}"
     )
 
+
+
+def run_convert_depth_jsonl(input_path: str, output_path: str, *, strict: bool = True) -> str:
+    stats = convert_binance_depth_jsonl_to_replay(input_path, output_path, strict=strict)
+    return (
+        f"converted_total={stats.total_lines}, written={stats.written_events}, skipped={stats.skipped_lines}, "
+        f"output={output_path}"
+    )
+
 def run_bridge_demo() -> str:
     signal_engine = SignalEngine(
         quote_engine=QuoteEngine(max_name_risk=1_000),
@@ -320,6 +330,9 @@ def main() -> None:
     parser.add_argument("--download-l2-snapshot", type=str, default=None, help="Download Binance futures L2 snapshot by symbol")
     parser.add_argument("--snapshot-out", type=str, default="data/l2_snapshot.jsonl", help="Output JSONL path for downloaded L2 snapshot")
     parser.add_argument("--l2-base-url", type=str, default="https://fapi.binance.com", help="Base URL for L2 snapshot download")
+    parser.add_argument("--convert-depth-jsonl", type=str, default=None, help="Convert raw Binance depth JSONL into replay JSONL")
+    parser.add_argument("--convert-out", type=str, default="data/replay_depth.jsonl", help="Output JSONL path for converted depth replay")
+    parser.add_argument("--convert-lenient", action="store_true", help="Skip invalid depth rows during conversion")
     parser.add_argument("--bridge-demo", action="store_true", help="Run exchange bridge -> signal demo")
     parser.add_argument("--portfolio-demo", action="store_true", help="Run portfolio position tracking demo")
     parser.add_argument("--runtime-demo", action="store_true", help="Run runtime wiring demo")
@@ -351,6 +364,8 @@ def main() -> None:
         print(run_backtest_file(args.backtest_file, strict=not args.backtest_lenient))
     elif args.download_l2_snapshot:
         print(run_download_l2_snapshot(args.download_l2_snapshot, args.snapshot_out, base_url=args.l2_base_url))
+    elif args.convert_depth_jsonl:
+        print(run_convert_depth_jsonl(args.convert_depth_jsonl, args.convert_out, strict=not args.convert_lenient))
     elif args.bridge_demo:
         print(run_bridge_demo())
     elif args.portfolio_demo:
