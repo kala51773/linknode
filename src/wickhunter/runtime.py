@@ -1,5 +1,6 @@
 import time
 from dataclasses import dataclass, field
+from typing import Any
 
 from wickhunter.common.emergency import EmergencyNotifier
 from wickhunter.common.events import FillEvent
@@ -118,6 +119,14 @@ class WickHunterRuntime:
             reason=reason,
             symbols=self.emergency_symbols,
         )
+        
+        # Confirmation/Escalation: if backend failed or symbols might still be exposed
+        success = backend_result.accepted
+        if not success:
+            # We already halted, but we should escalate if the cancel command failed
+            self.emergency_notification_errors.append(f"emergency_stop_failed:{backend_result.reason}")
+            # In a real system, we might retry here or send an even more urgent alert.
+        
         self.halted = True
         self.emergency_events.append(
             RuntimeEmergencyEvent(

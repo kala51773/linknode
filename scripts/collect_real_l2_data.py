@@ -8,7 +8,8 @@ import websockets
 
 async def fetch_snapshot(symbol: str) -> dict:
     url = f"https://fapi.binance.com/fapi/v1/depth?symbol={symbol.upper()}&limit=1000"
-    async with aiohttp.ClientSession() as session:
+    connector = aiohttp.TCPConnector(resolver=aiohttp.ThreadedResolver())
+    async with aiohttp.ClientSession(connector=connector) as session:
         async with session.get(url) as resp:
             resp.raise_for_status()
             return await resp.json()

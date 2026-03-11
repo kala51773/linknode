@@ -57,7 +57,9 @@ class BinanceFuturesClient:
 
     async def get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:  # type: ignore
-            self._session = aiohttp.ClientSession()
+            # Prefer threaded DNS resolution; AsyncResolver can fail in some environments.
+            connector = aiohttp.TCPConnector(resolver=aiohttp.ThreadedResolver())
+            self._session = aiohttp.ClientSession(connector=connector)
         return self._session  # type: ignore
 
     async def close_session(self) -> None:
@@ -160,6 +162,12 @@ class BinanceFuturesClient:
         headers = {
             "X-MBX-APIKEY": self.api_key
         }
+        async with session.delete(f"{url}?{query_string}&signature={signature}", headers=headers) as resp:
+            try:
+                data = await resp.json()
+            except Exception:
+                data = {"code": resp.status, "msg": await resp.text()}
+        return data
 
     async def get_open_orders(self, symbol: str) -> list[dict[str, Any]]:
         """Fetch all current open orders for a symbol."""

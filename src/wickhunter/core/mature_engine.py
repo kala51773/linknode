@@ -433,6 +433,8 @@ class BinanceDirectAdapter(MatureEngineAdapter):
     def _run_coro(self, coro: Any) -> dict[str, Any]:
         try:
             asyncio.get_running_loop()
+            if asyncio.iscoroutine(coro):
+                coro.close()
             raise RuntimeError("running_event_loop")
         except RuntimeError as exc:
             if str(exc) == "running_event_loop":
