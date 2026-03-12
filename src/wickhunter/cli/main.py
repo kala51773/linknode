@@ -7,7 +7,8 @@ from wickhunter.common.events import FillEvent
 from wickhunter.core.mature_engine import NautilusTraderAdapter
 from wickhunter.core.orchestrator import CoreOrchestrator
 from wickhunter.exchange.binance_futures import BinanceFuturesClient, BinanceFuturesDepthParser
-from wickhunter.exchange.bridge import BinanceSignalBridge
+from wickhunter.exchange.bridge import BinanceSignalBridge, OKXSignalBridge
+from wickhunter.exchange.okx_swap import OKXDepthParser, OKXSwapClient
 from wickhunter.execution.engine import ExecutionEngine
 from wickhunter.execution.hedge_manager import HedgeManager
 from wickhunter.execution.throttle import CancelThrottle
@@ -21,7 +22,10 @@ from wickhunter.strategy.signal_engine import SignalEngine
 from wickhunter.strategy.state_machine import EngineState, StrategyState
 from wickhunter.simulation.hedge_latency import HedgeLatencyModel
 from wickhunter.runtime import WickHunterRuntime
-from wickhunter.backtest.l2_simulator import create_default_l2_simulator
+from wickhunter.backtest.l2_simulator import (
+    create_default_l2_simulator,
+    optimize_l2_simulator,
+)
 from pathlib import Path
 
 
@@ -146,6 +150,42 @@ def run_exchange_signal_demo() -> str:
 
     plan = signal_engine.generate_quote_plan(fair_price=100.0)
     return f"source=binance_normalized, armed={plan.armed}, levels={len(plan.levels)}"
+
+
+def run_okx_exchange_demo() -> str:
+    payload = (
+        '{"arg":{"channel":"books-l2-tbt","instId":"BTC-USDT-SWAP"},"action":"update","data":['
+        '{"bids":[["50000.1","1.2","0","1"]],"asks":[["50001.0","2.5","0","1"]],'
+        '"ts":"1700000000000","seqId":1001,"prevSeqId":1000}]}'
+    )
+    client = OKXSwapClient(depth_parser=OKXDepthParser())
+    event = client.normalize_depth_payload(payload)
+    return (
+        f"exchange={event.exchange}, symbol={event.symbol}, "
+        f"update=[{event.first_update_id},{event.final_update_id}]"
+    )
+
+
+def run_okx_exchange_signal_demo() -> str:
+    signal_engine = SignalEngine(
+        quote_engine=QuoteEngine(max_name_risk=1_000),
+        baseline_depth_5bp=100.0,
+        synchronizer=BookSynchronizer(),
+    )
+    bridge = OKXSignalBridge(
+        client=OKXSwapClient(depth_parser=OKXDepthParser()),
+        signal_engine=signal_engine,
+    )
+
+    payloads = [
+        '{"arg":{"channel":"books-l2-tbt","instId":"BTC-USDT-SWAP"},"action":"update","data":[{"bids":[["100.0","30.0","0","1"]],"asks":[],"ts":"1","seqId":101,"prevSeqId":100}]}',
+        '{"arg":{"channel":"books-l2-tbt","instId":"BTC-USDT-SWAP"},"action":"update","data":[{"bids":[],"asks":[["100.1","5.0","0","1"]],"ts":"2","seqId":102,"prevSeqId":101}]}',
+    ]
+    count = bridge.ingest_many(payloads)
+    signal_engine.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
+
+    plan = signal_engine.generate_quote_plan(fair_price=100.0)
+    return f"source=okx_normalized, ingested={count}, armed={plan.armed}, levels={len(plan.levels)}"
 
 
 def run_m3_demo() -> str:
@@ -279,16 +319,86 @@ def run_l2_real_demo() -> str:
     path = Path("data/real_l2_events.jsonl")
     if not path.exists():
         return f"File {path} not found. Run scripts/collect_real_l2_data.py first."
-        
-    simulator = create_default_l2_simulator()
-    # Boost theta heavily to get filled during short demo, and relax base depth
-    simulator.runtime.bridge.signal_engine.quote_engine.theta1 = 0.00001
-    simulator.runtime.bridge.signal_engine.quote_engine.theta2 = 0.00005
-    simulator.runtime.bridge.signal_engine.baseline_depth_5bp = 1_000_000_000.0 
-    
-    report = simulator.run(path)
-    return f"l2_real_events={report.event_count}, net_pnl={report.total_net_pnl:.6f}, " \
-           f"avg_hedge_latency={report.avg_hedge_latency_ms:.1f}ms, avg_slippage={report.avg_slippage_bps:.2f}bps"
+    tuned = optimize_l2_simulator(file_path=path, min_events=20)
+    if tuned is None:
+        simulator = create_default_l2_simulator()
+        report = simulator.run(path)
+        return (
+            f"l2_real_events={report.event_count}, net_pnl={report.total_net_pnl:.6f}, "
+            f"avg_hedge_latency={report.avg_hedge_latency_ms:.1f}ms, avg_slippage={report.avg_slippage_bps:.2f}bps"
+        )
+
+    cfg = tuned.config
+    report = tuned.report
+    return (
+        f"l2_real_events={report.event_count}, net_pnl={report.total_net_pnl:.6f}, "
+        f"avg_hedge_latency={report.avg_hedge_latency_ms:.1f}ms, avg_slippage={report.avg_slippage_bps:.2f}bps, "
+        f"theta1={cfg.theta1:.8f}, theta2={cfg.theta2:.8f}, theta3={cfg.theta3:.8f}, baseline={cfg.baseline_depth_5bp:.0f}"
+    )
+
+
+def run_discover_demo() -> str:
+    import numpy as np
+    import pandas as pd
+
+    from wickhunter.strategy.discover import DiscoverConfig, DiscoverEngine
+    from wickhunter.strategy.pair_selector import PairSelector
+    from wickhunter.strategy.universe import UniverseManager
+
+    idx = pd.RangeIndex(start=0, stop=900, step=1)
+    base = np.exp(np.linspace(10.0, 10.35, len(idx)) + 0.003 * np.sin(np.arange(len(idx)) / 12))
+    b_good = base * np.exp(0.002 * np.sin(np.arange(len(idx)) / 6))
+    b_too_liquid = base * np.exp(0.0025 * np.sin(np.arange(len(idx)) / 8))
+    b_low_corr = np.exp(np.linspace(10.4, 10.0, len(idx)) + 0.08 * np.sin(np.arange(len(idx)) / 3))
+
+    history = {
+        "BTCUSDT": {
+            "1d": pd.Series(base, index=idx),
+            "4h": pd.Series(base[::2], index=idx[::2]),
+        },
+        "ALT1USDT": {
+            "1d": pd.Series(b_good, index=idx),
+            "4h": pd.Series(b_good[::2], index=idx[::2]),
+        },
+        "ALT2USDT": {
+            "1d": pd.Series(b_too_liquid, index=idx),
+            "4h": pd.Series(b_too_liquid[::2], index=idx[::2]),
+        },
+        "ALT3USDT": {
+            "1d": pd.Series(b_low_corr, index=idx),
+            "4h": pd.Series(b_low_corr[::2], index=idx[::2]),
+        },
+    }
+    raw_markets = [
+        {"symbol": "BTCUSDT", "baseAsset": "BTC", "quoteAsset": "USDT", "quoteVolume": 3_000_000_000},
+        {"symbol": "ALT1USDT", "baseAsset": "ALT1", "quoteAsset": "USDT", "quoteVolume": 120_000_000},
+        {"symbol": "ALT2USDT", "baseAsset": "ALT2", "quoteAsset": "USDT", "quoteVolume": 1_100_000_000},
+        {"symbol": "ALT3USDT", "baseAsset": "ALT3", "quoteAsset": "USDT", "quoteVolume": 100_000_000},
+    ]
+
+    discover = DiscoverEngine(universe=UniverseManager(), selector=PairSelector())
+    result = discover.run_auto_discovery_multi_tf(
+        raw_markets=raw_markets,
+        price_history_by_tf=history,
+        config=DiscoverConfig(
+            anchor_symbols=("BTCUSDT",),
+            min_daily_volume_usd=50_000_000,
+            max_daily_volume_usd=500_000_000,
+            min_history_points=300,
+            min_history_points_by_tf={"1d": 300, "4h": 300},
+            timeframes=("1d", "4h"),
+            timeframe_weights={"1d": 0.65, "4h": 0.35},
+            top_k=3,
+        ),
+    )
+    if not result:
+        return "discover_pairs=0"
+    best = result[0]
+    return (
+        f"discover_pairs={len(result)}, best_a={best.pair_a}, best_b={best.pair_b}, score={best.score:.4f}, "
+        f"corr={best.components.get('corr_30d', 0.0):.3f}, r2={best.components.get('r2_6h', 0.0):.3f}, "
+        f"vol_ratio={best.components.get('volume_ratio_b_to_a', 0.0):.3f}"
+    )
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="WickHunter dev CLI")
@@ -300,6 +410,8 @@ def main() -> None:
     parser.add_argument("--mature-demo", action="store_true", help="Run mature-engine orchestration demo")
     parser.add_argument("--exchange-demo", action="store_true", help="Run exchange parser normalization demo")
     parser.add_argument("--exchange-signal-demo", action="store_true", help="Run normalized exchange -> signal pipeline demo")
+    parser.add_argument("--okx-exchange-demo", action="store_true", help="Run OKX parser normalization demo")
+    parser.add_argument("--okx-exchange-signal-demo", action="store_true", help="Run OKX normalized exchange -> signal pipeline demo")
     parser.add_argument("--m3-demo", action="store_true", help="Run M3 replay/simulation/report demo")
     parser.add_argument("--replay-file", type=str, default=None, help="Replay events from JSONL file")
     parser.add_argument("--bridge-demo", action="store_true", help="Run exchange bridge -> signal demo")
@@ -308,6 +420,7 @@ def main() -> None:
     parser.add_argument("--exec-demo", action="store_true", help="Run execution orchestration demo")
     parser.add_argument("--cancel-demo", action="store_true", help="Run cancel throttle demo")
     parser.add_argument("--l2-real-demo", action="store_true", help="Run L2 simulator on real data collected from Binance")
+    parser.add_argument("--discover-demo", action="store_true", help="Run automatic B-symbol discovery demo")
     args = parser.parse_args()
 
     if args.demo:
@@ -326,6 +439,10 @@ def main() -> None:
         print(run_exchange_demo())
     elif args.exchange_signal_demo:
         print(run_exchange_signal_demo())
+    elif args.okx_exchange_demo:
+        print(run_okx_exchange_demo())
+    elif args.okx_exchange_signal_demo:
+        print(run_okx_exchange_signal_demo())
     elif args.m3_demo:
         print(run_m3_demo())
     elif args.replay_file:
@@ -342,6 +459,8 @@ def main() -> None:
         print(run_cancel_demo())
     elif args.l2_real_demo:
         print(run_l2_real_demo())
+    elif args.discover_demo:
+        print(run_discover_demo())
     else:
         parser.print_help()
 

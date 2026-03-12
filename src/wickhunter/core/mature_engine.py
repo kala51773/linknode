@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Any
 
 from wickhunter.common.events import HedgeOrder
+from wickhunter.execution.quote_manager import QuoteManager
 from wickhunter.execution.order_tracker import OrderState, OrderTracker
 from wickhunter.strategy.quote_engine import QuotePlan
 
@@ -54,6 +55,30 @@ class EngineSubmitResult:
     exchange_message: str | None = None
     order_id: int | None = None
     client_order_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ReconcileReport:
+    success: bool
+    reason: str
+    exchange_open_orders: int
+    local_open_before: int
+    local_open_after: int
+    resolved_via_status: int
+    assumed_closed: int
+    unresolved_local: int
+    unresolved_client_order_ids: tuple[str, ...] = ()
+    status_query_failures: int = 0
+    error_detail: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ActiveQuote:
+    client_order_id: str
+    price: float
+    qty: float
+    created_monotonic: float
+    order_id: int | None = None
 
 
 class MatureEngineAdapter:
@@ -114,12 +139,21 @@ class BinanceDirectAdapter(MatureEngineAdapter):
     max_retries: int = 2
     retry_backoff_seconds: float = 0.05
     retryable_error_codes: tuple[int, ...] = (-1001, -1006, -1007, -1008, -1015, -1021)
+    min_requote_interval_seconds: float = 0.25
+    min_quote_price_move_bps: float = 2.0
+    min_quote_size_change_ratio: float = 0.10
+    quote_manager: QuoteManager = field(default_factory=QuoteManager)
     order_tracker: OrderTracker = field(default_factory=OrderTracker)
     order_reports: list[ExchangeOrderReport] = field(default_factory=list)
     emergency_reports: list[EmergencyStopReport] = field(default_factory=list)
+    active_quote: ActiveQuote | None = None
+    _last_quote_submit_monotonic: float = field(default=0.0, init=False)
 
     def submit_quote_plan(self, plan: QuotePlan) -> EngineSubmitResult:
+        self._sync_active_quote_from_tracker()
         if not plan.armed:
+            if self.active_quote is not None:
+                self._cancel_active_quote_if_due()
             return EngineSubmitResult(accepted=False, backend=self.backend, reason="plan_not_armed")
         if self.client is None:
             return EngineSubmitResult(accepted=False, backend=self.backend, reason="client_missing")
@@ -129,6 +163,33 @@ class BinanceDirectAdapter(MatureEngineAdapter):
             return EngineSubmitResult(accepted=False, backend=self.backend, reason="no_quote_levels")
 
         level = plan.levels[0]
+        if self.active_quote is not None:
+            if self._is_requote_change_too_small(target_price=level.price, target_qty=level.size):
+                return EngineSubmitResult(
+                    accepted=True,
+                    backend=self.backend,
+                    reason="quote_unchanged",
+                    client_order_id=self.active_quote.client_order_id,
+                    order_id=self.active_quote.order_id,
+                )
+            if (time.monotonic() - self._last_quote_submit_monotonic) < self.min_requote_interval_seconds:
+                return EngineSubmitResult(
+                    accepted=True,
+                    backend=self.backend,
+                    reason="quote_requote_throttled",
+                    client_order_id=self.active_quote.client_order_id,
+                    order_id=self.active_quote.order_id,
+                )
+            canceled, reason = self._cancel_active_quote_if_due()
+            if not canceled:
+                return EngineSubmitResult(
+                    accepted=True,
+                    backend=self.backend,
+                    reason=f"quote_cancel_deferred:{reason}",
+                    client_order_id=self.active_quote.client_order_id if self.active_quote else None,
+                    order_id=self.active_quote.order_id if self.active_quote else None,
+                )
+
         client_order_id = self.order_tracker.generate_client_id(prefix="wh_q_")
         self.order_tracker.track_order(
             client_order_id=client_order_id,
@@ -138,7 +199,7 @@ class BinanceDirectAdapter(MatureEngineAdapter):
             price=level.price,
             intent="quote",
         )
-        return self._submit_order(
+        result = self._submit_order(
             intent="quote",
             client_order_id=client_order_id,
             symbol=self.quote_symbol,
@@ -148,6 +209,18 @@ class BinanceDirectAdapter(MatureEngineAdapter):
             order_type=self.quote_order_type,
             time_in_force=self.quote_time_in_force,
         )
+        if result.accepted:
+            now = time.monotonic()
+            self.active_quote = ActiveQuote(
+                client_order_id=client_order_id,
+                price=level.price,
+                qty=level.size,
+                created_monotonic=now,
+                order_id=result.order_id,
+            )
+            self.quote_manager.register_quote(client_order_id)
+            self._last_quote_submit_monotonic = now
+        return result
 
     def submit_hedge_order(self, order: HedgeOrder) -> EngineSubmitResult:
         if order.qty <= 0 or order.limit_price <= 0:
@@ -195,44 +268,129 @@ class BinanceDirectAdapter(MatureEngineAdapter):
         if not client_order_id and not order_id:
             return None
 
-        return self.order_tracker.on_report(
+        state = self.order_tracker.on_report(
             client_order_id=client_order_id if isinstance(client_order_id, str) else None,
             exchange_order_id=order_id,
             status=self._to_tracker_status(accepted=True, exchange_status=status),
             filled_qty=filled_qty,
         )
+        self._sync_active_quote_from_tracker()
+        if state is not None and self.active_quote and state.client_order_id == self.active_quote.client_order_id:
+            if state.status in {"FILLED", "CANCELED", "REJECTED", "EXPIRED"}:
+                self.active_quote = None
+        return state
 
     def reconcile_open_orders(self) -> None:
-        """Fetch all open orders from exchange and reconcile with local tracker."""
+        """Legacy best-effort reconcile API (kept for backward compatibility)."""
+        self.reconcile_open_orders_strict()
+
+    def reconcile_open_orders_strict(self) -> ReconcileReport:
+        """Reconcile local tracker with exchange and return explicit health result."""
         if self.client is None or not self.quote_symbol:
-            return
+            return ReconcileReport(
+                success=False,
+                reason="reconcile_config_missing",
+                exchange_open_orders=0,
+                local_open_before=0,
+                local_open_after=len(self.order_tracker.get_open_orders()),
+                resolved_via_status=0,
+                assumed_closed=0,
+                unresolved_local=0,
+                unresolved_client_order_ids=(),
+                error_detail=None,
+            )
+
+        local_open_before = len(self.order_tracker.get_open_orders())
+        resolved_via_status = 0
+        assumed_closed = 0
+        status_query_failures = 0
+        unresolved_ids: list[str] = []
 
         try:
-            # 1. Fetch from exchange
             raw_open = self._run_coro(self.client.get_open_orders(symbol=self.quote_symbol))
+            if not isinstance(raw_open, list):
+                return ReconcileReport(
+                    success=False,
+                    reason="reconcile_exchange_payload_invalid",
+                    exchange_open_orders=0,
+                    local_open_before=local_open_before,
+                    local_open_after=len(self.order_tracker.get_open_orders()),
+                    resolved_via_status=0,
+                    assumed_closed=0,
+                    unresolved_local=len(self.order_tracker.get_open_orders()),
+                    unresolved_client_order_ids=tuple(o.client_order_id for o in self.order_tracker.get_open_orders()),
+                    error_detail=None,
+                )
             exchange_open_cids = {o.get("clientOrderId") for o in raw_open if o.get("clientOrderId")}
-            
-            # 2. Update status for those found in exchange
+
             for o in raw_open:
                 self.on_execution_report(o)
 
-            # 3. For orders we think are open but NOT in exchange_open_cids, fetch individual status
             local_open = self.order_tracker.get_open_orders()
             for order in local_open:
                 if order.client_order_id not in exchange_open_cids:
                     try:
-                        # Fetch status to see if it was filled/canceled while bot was down
                         detailed = self._run_coro(self.client.get_order_status(
                             symbol=self.quote_symbol,
                             orig_client_order_id=order.client_order_id
                         ))
-                        self.on_execution_report(detailed)
                     except Exception:
-                        # Order might have been purged or not found
-                        pass
-        except Exception:
-            # Log failure in real implementation
-            pass
+                        status_query_failures += 1
+                        unresolved_ids.append(order.client_order_id)
+                        continue
+
+                    if isinstance(detailed, dict) and self._is_order_not_found_payload(detailed):
+                        if self._mark_order_assumed_closed(order.client_order_id):
+                            assumed_closed += 1
+                        else:
+                            unresolved_ids.append(order.client_order_id)
+                        continue
+
+                    state = self.on_execution_report(detailed) if isinstance(detailed, dict) else None
+                    if state is None:
+                        unresolved_ids.append(order.client_order_id)
+                        continue
+                    if state.status in {"FILLED", "CANCELED", "REJECTED", "EXPIRED"}:
+                        resolved_via_status += 1
+                    elif state.status in {"NEW", "PARTIALLY_FILLED"}:
+                        # If exchange did not report this order as open, but status query still
+                        # returns a non-terminal state, keep it unresolved for follow-up.
+                        unresolved_ids.append(order.client_order_id)
+                    else:
+                        unresolved_ids.append(order.client_order_id)
+        except Exception as exc:
+            return ReconcileReport(
+                success=False,
+                reason="reconcile_exchange_query_failed",
+                exchange_open_orders=0,
+                local_open_before=local_open_before,
+                local_open_after=len(self.order_tracker.get_open_orders()),
+                resolved_via_status=resolved_via_status,
+                assumed_closed=assumed_closed,
+                unresolved_local=len(self.order_tracker.get_open_orders()),
+                unresolved_client_order_ids=tuple(o.client_order_id for o in self.order_tracker.get_open_orders()),
+                status_query_failures=status_query_failures,
+                error_detail=str(exc),
+            )
+
+        remaining_open = self.order_tracker.get_open_orders()
+        remaining_set = {o.client_order_id for o in remaining_open}
+        unresolved_set = {cid for cid in unresolved_ids if cid in remaining_set}
+        unresolved_count = len(unresolved_set)
+        reason = "ok" if unresolved_count == 0 and status_query_failures == 0 else "reconcile_unresolved"
+        return ReconcileReport(
+            success=(reason == "ok"),
+            reason=reason,
+            exchange_open_orders=len(raw_open),
+            local_open_before=local_open_before,
+            local_open_after=len(remaining_open),
+            resolved_via_status=resolved_via_status,
+            assumed_closed=assumed_closed,
+            unresolved_local=unresolved_count,
+            unresolved_client_order_ids=tuple(sorted(unresolved_set)),
+            status_query_failures=status_query_failures,
+            error_detail=None,
+        )
 
     def emergency_stop(self, *, reason: str, symbols: tuple[str, ...]) -> EngineSubmitResult:
         if self.client is None:
@@ -387,6 +545,12 @@ class BinanceDirectAdapter(MatureEngineAdapter):
                 self._reconcile_order_tracker(report)
                 return self._to_result(report)
 
+            recovered = self._recover_duplicate_order(report)
+            if recovered is not None:
+                self.order_reports.append(recovered)
+                self._reconcile_order_tracker(recovered)
+                return self._to_result(recovered)
+
             if report.exchange_code in self.retryable_error_codes and attempt < max_attempts:
                 self._backoff()
                 continue
@@ -395,6 +559,115 @@ class BinanceDirectAdapter(MatureEngineAdapter):
             return self._to_result(report)
 
         return EngineSubmitResult(accepted=False, backend=self.backend, reason="unexpected_retry_exit")
+
+    def _cancel_active_quote_if_due(self) -> tuple[bool, str]:
+        active = self.active_quote
+        if active is None:
+            return True, "no_active_quote"
+
+        if not self.quote_manager.can_cancel(active.client_order_id):
+            return False, "quote_manager_throttled"
+
+        max_attempts = max(1, self.max_retries + 1)
+        for attempt in range(1, max_attempts + 1):
+            try:
+                payload = self._run_coro(
+                    self._build_cancel_order_coro(
+                        symbol=self.quote_symbol,
+                        order_id=active.order_id,
+                        client_order_id=active.client_order_id,
+                    )
+                )
+            except RuntimeError as exc:
+                if str(exc) != "running_event_loop":
+                    raise
+                return False, "event_loop_running"
+            except Exception as exc:
+                if attempt >= max_attempts:
+                    return False, f"cancel_exception:{exc}"
+                self._backoff()
+                continue
+
+            code, msg = self._extract_error(payload if isinstance(payload, dict) else {})
+            if code is not None and code < 0:
+                # Unknown order implies it's already gone on venue.
+                if code == -2011:
+                    self._mark_order_assumed_closed(active.client_order_id)
+                    self.quote_manager.record_cancel(active.client_order_id)
+                    self.active_quote = None
+                    return True, "already_closed"
+                if code in self.retryable_error_codes and attempt < max_attempts:
+                    self._backoff()
+                    continue
+                return False, f"cancel_reject:{code}:{msg or 'unknown'}"
+
+            try:
+                self.order_tracker.on_report(client_order_id=active.client_order_id, status="CANCELED")
+            except ValueError:
+                self._mark_order_assumed_closed(active.client_order_id)
+            self.quote_manager.record_cancel(active.client_order_id)
+            self.active_quote = None
+            return True, "ok"
+
+        return False, "cancel_retry_exhausted"
+
+    def _build_cancel_order_coro(
+        self,
+        *,
+        symbol: str,
+        order_id: int | None,
+        client_order_id: str,
+    ) -> Any:
+        if order_id is not None:
+            try:
+                return self.client.cancel_order(symbol=symbol, order_id=order_id, orig_client_order_id=client_order_id)
+            except TypeError as exc:
+                if "orig_client_order_id" not in str(exc):
+                    raise
+                return self.client.cancel_order(symbol=symbol, order_id=order_id)
+
+        # Fallback for unknown exchange order id.
+        try:
+            return self.client.cancel_order(symbol=symbol, orig_client_order_id=client_order_id)
+        except TypeError as exc:
+            if "orig_client_order_id" not in str(exc):
+                raise
+            return self.client.cancel_all_open_orders(symbol=symbol)
+
+    def _sync_active_quote_from_tracker(self) -> None:
+        active = self.active_quote
+        if active is None:
+            return
+        state = self.order_tracker.get_order(active.client_order_id)
+        if state is None:
+            self.active_quote = None
+            return
+        if state.status in {"FILLED", "CANCELED", "REJECTED", "EXPIRED"}:
+            self.active_quote = None
+            return
+        order_id = active.order_id
+        if order_id is None and state.exchange_order_id and state.exchange_order_id.isdigit():
+            order_id = int(state.exchange_order_id)
+            self.active_quote = ActiveQuote(
+                client_order_id=active.client_order_id,
+                price=active.price,
+                qty=active.qty,
+                created_monotonic=active.created_monotonic,
+                order_id=order_id,
+            )
+
+    def _is_requote_change_too_small(self, *, target_price: float, target_qty: float) -> bool:
+        active = self.active_quote
+        if active is None:
+            return False
+        if active.price <= 0 or target_price <= 0:
+            return False
+        price_move_bps = abs(target_price - active.price) / active.price * 10_000.0
+        qty_change_ratio = 0.0 if active.qty <= 0 else abs(target_qty - active.qty) / active.qty
+        return (
+            price_move_bps < self.min_quote_price_move_bps
+            and qty_change_ratio < self.min_quote_size_change_ratio
+        )
 
     def _build_place_order_coro(
         self,
@@ -529,6 +802,45 @@ class BinanceDirectAdapter(MatureEngineAdapter):
             filled_qty=filled_qty,
         )
 
+    def _recover_duplicate_order(self, report: ExchangeOrderReport) -> ExchangeOrderReport | None:
+        if self.client is None:
+            return None
+        if not self._is_duplicate_client_order_reject(report):
+            return None
+        try:
+            payload = self._run_coro(
+                self.client.get_order_status(
+                    symbol=report.symbol,
+                    orig_client_order_id=report.client_order_id,
+                )
+            )
+        except Exception:
+            return None
+        if not isinstance(payload, dict):
+            return None
+        recovered = self._build_report_from_payload(
+            intent=report.intent,
+            client_order_id=report.client_order_id,
+            symbol=report.symbol,
+            side=report.side,
+            qty=report.qty,
+            price=report.price,
+            order_type=report.order_type,
+            time_in_force=report.time_in_force,
+            attempts=report.attempts,
+            payload=payload,
+        )
+        if recovered.accepted:
+            return recovered
+        return None
+
+    @staticmethod
+    def _is_duplicate_client_order_reject(report: ExchangeOrderReport) -> bool:
+        msg = (report.exchange_message or "").lower()
+        if "duplicate" in msg and "order" in msg:
+            return True
+        return report.exchange_code in {-4116}
+
     @staticmethod
     def _extract_error(payload: dict[str, Any]) -> tuple[int | None, str | None]:
         raw_code = payload.get("code")
@@ -593,3 +905,23 @@ class BinanceDirectAdapter(MatureEngineAdapter):
             order_id=report.order_id,
             client_order_id=report.client_order_id,
         )
+
+    def _mark_order_assumed_closed(self, client_order_id: str) -> bool:
+        state = self.order_tracker.get_order(client_order_id)
+        if state is None:
+            return False
+        if state.status in {"FILLED", "CANCELED", "REJECTED", "EXPIRED"}:
+            return True
+        try:
+            updated = self.order_tracker.on_report(client_order_id=client_order_id, status="EXPIRED")
+        except ValueError:
+            return False
+        return updated is not None and updated.status == "EXPIRED"
+
+    def _is_order_not_found_payload(self, payload: dict[str, Any]) -> bool:
+        code, msg = self._extract_error(payload)
+        if code == -2013:
+            return True
+        if isinstance(msg, str) and "does not exist" in msg.lower():
+            return True
+        return False

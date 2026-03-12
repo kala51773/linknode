@@ -125,16 +125,26 @@ class BinanceFuturesClient:
             data = await resp.json()
         return data
 
-    async def cancel_order(self, symbol: str, order_id: int) -> dict[str, Any]:
+    async def cancel_order(
+        self,
+        symbol: str,
+        order_id: int | None = None,
+        orig_client_order_id: str | None = None,
+    ) -> dict[str, Any]:
         session = await self.get_session()
         url = f"{self.rest_url}/fapi/v1/order"
         
         timestamp = int(time.time() * 1000)
         params = {
             "symbol": symbol.upper(),
-            "orderId": str(order_id),
             "timestamp": str(timestamp),
         }
+        if order_id is not None:
+            params["orderId"] = str(order_id)
+        if orig_client_order_id:
+            params["origClientOrderId"] = orig_client_order_id
+        if order_id is None and not orig_client_order_id:
+            raise ValueError("cancel_order requires order_id or orig_client_order_id")
         query_string = "&".join([f"{k}={v}" for k, v in params.items()])
         signature = self._generate_signature(query_string)
         
@@ -246,14 +256,27 @@ class BinanceFuturesClient:
             except websockets.ConnectionClosed:
                 continue
 
-    async def stream_user_data(self, listen_key: str, callback: Callable[[str], None]) -> None:
+    async def stream_user_data(
+        self,
+        listen_key: str,
+        callback: Callable[[str], Any],
+        stop_event: asyncio.Event | None = None,
+    ) -> None:
         """Connects to the User Data Stream using the provided listenKey and feeds messages to the callback."""
         url = f"{self.ws_url}/{listen_key}"
         
         async for ws in websockets.connect(url):
+            if stop_event is not None and stop_event.is_set():
+                await ws.close()
+                return
             try:
                 async for message in ws:
                     callback(message)
+                    if stop_event is not None and stop_event.is_set():
+                        await ws.close()
+                        return
             except websockets.ConnectionClosed:
                 # If WS drops, reconnection triggers re-fetching URL (though listenKey itself must be kept alive elsewhere)
+                if stop_event is not None and stop_event.is_set():
+                    return
                 continue

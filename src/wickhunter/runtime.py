@@ -4,10 +4,16 @@ from typing import Any
 
 from wickhunter.common.emergency import EmergencyNotifier
 from wickhunter.common.events import FillEvent
+from wickhunter.common.config import RiskLimits
 from wickhunter.core.orchestrator import CoreOrchestrator
 from wickhunter.exchange.bridge import BinanceSignalBridge
 from wickhunter.portfolio.position import Fill as PositionFill, Portfolio
-from wickhunter.risk.checks import RuntimeRiskState
+from wickhunter.risk.checks import (
+    AccountRiskSnapshot,
+    RiskChecker,
+    RuntimeRiskState,
+    build_account_snapshot_from_binance,
+)
 from wickhunter.risk.circuit_breaker import CircuitBreaker
 
 
@@ -41,6 +47,11 @@ class WickHunterRuntime:
     emergency_events: list[RuntimeEmergencyEvent] = field(default_factory=list)
     emergency_notifier: EmergencyNotifier | None = None
     emergency_notification_errors: list[str] = field(default_factory=list)
+    account_risk_checker: RiskChecker = field(default_factory=lambda: RiskChecker(RiskLimits()))
+    hard_stop_limits: RiskLimits = field(default_factory=RiskLimits)
+    last_account_snapshot: AccountRiskSnapshot | None = None
+    account_risk_errors: list[str] = field(default_factory=list)
+    account_risk_reject_count: int = 0
     halted: bool = False
 
     def on_market_payloads(self, payloads: list[str]) -> int:
@@ -52,6 +63,24 @@ class WickHunterRuntime:
             return
         # Route to backend adapter for tracking/reconciliation
         self.orchestrator.backend.on_execution_report(payload)
+
+    def on_account_update(self, payload: dict[str, Any]) -> None:
+        """Process account updates and trip emergency stop if account risk breaches limits."""
+        if self.halted:
+            return
+
+        snapshot = build_account_snapshot_from_binance(payload)
+        if snapshot is None:
+            self.account_risk_errors.append("account_update_parse_failed")
+            return
+
+        self.last_account_snapshot = snapshot
+        allowed, reason = self.account_risk_checker.can_accept_account_snapshot(snapshot)
+        if allowed:
+            return
+
+        self.account_risk_reject_count += 1
+        self._trigger_emergency_stop(f"account_risk:{reason}")
 
     def on_snapshot(
         self,
@@ -79,6 +108,11 @@ class WickHunterRuntime:
     ) -> RuntimeStepResult:
         if self.halted:
             return RuntimeStepResult(False, "runtime_halted", False, False, False)
+
+        hard_stop_reason = self._hard_stop_reason_from_state(risk_state)
+        if hard_stop_reason:
+            emergency_triggered = self._trigger_emergency_stop(hard_stop_reason)
+            return RuntimeStepResult(False, hard_stop_reason, False, False, emergency_triggered)
 
         allowed, reason = self.circuit_breaker.evaluate(
             risk_state=risk_state,
@@ -139,6 +173,13 @@ class WickHunterRuntime:
         )
         self._notify_emergency_event(self.emergency_events[-1])
         return True
+
+    def _hard_stop_reason_from_state(self, state: RuntimeRiskState) -> str | None:
+        if state.daily_loss_pct >= self.hard_stop_limits.daily_loss_limit_pct:
+            return "daily_loss_limit"
+        if state.events_today >= self.hard_stop_limits.max_events_per_day:
+            return "max_events_per_day"
+        return None
 
     def _notify_emergency_event(self, event: RuntimeEmergencyEvent) -> None:
         notifier = self.emergency_notifier

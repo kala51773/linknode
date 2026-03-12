@@ -1,0 +1,3 @@
+[console_scripts]
+wickhunter-cli = wickhunter.cli.main:main
+wickhunter-live = wickhunter.cli.run_live:cli_main

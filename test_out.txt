@@ -1,0 +1,15 @@
+Connecting to Binance: testnet=True, url=https://testnet.binancefuture.com
+
+[1] Placing MARKET BUY for 0.005 BTCUSDT...
+Buy response:
+{
+  "code": -2015,
+  "msg": "Invalid API-key, IP, or permissions for action"
+}
+
+[2] Placing MARKET SELL to close 0.005 BTCUSDT...
+Sell response:
+{
+  "code": -2015,
+  "msg": "Invalid API-key, IP, or permissions for action"
+}

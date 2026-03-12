@@ -9,7 +9,11 @@ description = "Project WickHunter event-driven trading system scaffold"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "WickHunter Team" }]
-dependencies = ["websockets>=12.0", "aiohttp>=3.9"]
+dependencies = ["websockets>=12.0", "aiohttp>=3.9", "pyarrow>=14.0", "pandas>=2.0", "duckdb>=1.0", "python-dotenv>=1.2"]
+
+[project.scripts]
+wickhunter-cli = "wickhunter.cli.main:main"
+wickhunter-live = "wickhunter.cli.run_live:cli_main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

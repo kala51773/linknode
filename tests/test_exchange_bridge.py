@@ -1,7 +1,8 @@
 import unittest
 
 from wickhunter.exchange.binance_futures import BinanceFuturesClient, BinanceFuturesDepthParser
-from wickhunter.exchange.bridge import BinanceSignalBridge
+from wickhunter.exchange.bridge import BinanceSignalBridge, OKXSignalBridge
+from wickhunter.exchange.okx_swap import OKXDepthParser, OKXSwapClient
 from wickhunter.marketdata.synchronizer import BookSynchronizer
 from wickhunter.strategy.quote_engine import QuoteEngine
 from wickhunter.strategy.signal_engine import SignalEngine
@@ -22,6 +23,30 @@ class TestExchangeBridge(unittest.TestCase):
         payloads = [
             '{"e":"depthUpdate","E":1,"s":"BTCUSDT","U":101,"u":101,"pu":100,"b":[["100.0","30.0"]],"a":[]}',
             '{"e":"depthUpdate","E":2,"s":"BTCUSDT","U":102,"u":102,"pu":101,"b":[],"a":[["100.1","5.0"]]}',
+        ]
+
+        count = bridge.ingest_many(payloads)
+        signal_engine.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
+        plan = signal_engine.generate_quote_plan(fair_price=100.0)
+
+        self.assertEqual(count, 2)
+        self.assertTrue(plan.armed)
+        self.assertEqual(len(plan.levels), 3)
+
+    def test_okx_ingest_many_feeds_signal_engine(self) -> None:
+        signal_engine = SignalEngine(
+            quote_engine=QuoteEngine(max_name_risk=1000),
+            baseline_depth_5bp=100.0,
+            synchronizer=BookSynchronizer(),
+        )
+        bridge = OKXSignalBridge(
+            client=OKXSwapClient(depth_parser=OKXDepthParser()),
+            signal_engine=signal_engine,
+        )
+
+        payloads = [
+            '{"arg":{"channel":"books-l2-tbt","instId":"BTC-USDT-SWAP"},"action":"update","data":[{"bids":[["100.0","30.0","0","1"]],"asks":[],"ts":"1","seqId":101,"prevSeqId":100}]}',
+            '{"arg":{"channel":"books-l2-tbt","instId":"BTC-USDT-SWAP"},"action":"update","data":[{"bids":[],"asks":[["100.1","5.0","0","1"]],"ts":"2","seqId":102,"prevSeqId":101}]}',
         ]
 
         count = bridge.ingest_many(payloads)

@@ -6,6 +6,7 @@ from wickhunter.cli.main import (
     run_book_demo,
     run_bridge_demo,
     run_cancel_demo,
+    run_discover_demo,
     run_demo,
     run_exchange_demo,
     run_exchange_signal_demo,
@@ -13,6 +14,8 @@ from wickhunter.cli.main import (
     run_m3_demo,
     run_m3_replay_file,
     run_mature_demo,
+    run_okx_exchange_demo,
+    run_okx_exchange_signal_demo,
     run_portfolio_demo,
     run_quote_demo,
     run_runtime_demo,
@@ -70,6 +73,19 @@ class TestCli(unittest.TestCase):
         self.assertIn("armed=True", output)
         self.assertIn("levels=3", output)
 
+    def test_run_okx_exchange_demo_contains_exchange_fields(self) -> None:
+        output = run_okx_exchange_demo()
+        self.assertIn("exchange=okx_swap", output)
+        self.assertIn("symbol=BTC-USDT-SWAP", output)
+        self.assertIn("update=[1001,1001]", output)
+
+    def test_run_okx_exchange_signal_demo_contains_pipeline_fields(self) -> None:
+        output = run_okx_exchange_signal_demo()
+        self.assertIn("source=okx_normalized", output)
+        self.assertIn("ingested=2", output)
+        self.assertIn("armed=True", output)
+        self.assertIn("levels=3", output)
+
     def test_run_m3_demo_contains_report_fields(self) -> None:
         output = run_m3_demo()
         self.assertIn("m3_events=2", output)
@@ -120,6 +136,12 @@ class TestCli(unittest.TestCase):
         self.assertIn("d1=min_live_time", output)
         self.assertIn("d2=ok", output)
         self.assertIn("d3=cancel_rate_limit", output)
+
+    def test_run_discover_demo_contains_selection_fields(self) -> None:
+        output = run_discover_demo()
+        self.assertIn("discover_pairs=", output)
+        self.assertIn("best_a=BTCUSDT", output)
+        self.assertIn("best_b=", output)
 
 
 if __name__ == "__main__":

@@ -48,6 +48,27 @@ class TestOrderTracker(unittest.TestCase):
         self.assertTrue(cid.startswith("wh_x_"))
         self.assertGreater(len(cid), 10)
 
+    def test_partial_fill_then_full_fill_transitions(self) -> None:
+        tracker = OrderTracker()
+        tracker.track_order(
+            client_order_id="wh_partial_1",
+            symbol="BTCUSDT",
+            side="BUY",
+            qty=1.0,
+            price=100.0,
+            intent="quote",
+        )
+        state = tracker.on_report(client_order_id="wh_partial_1", status="PARTIALLY_FILLED", filled_qty=0.4)
+        assert state is not None
+        self.assertEqual(state.status, "PARTIALLY_FILLED")
+        self.assertEqual(state.filled_qty, 0.4)
+
+        final_state = tracker.on_report(client_order_id="wh_partial_1", status="FILLED", filled_qty=1.0)
+        assert final_state is not None
+        self.assertEqual(final_state.status, "FILLED")
+        self.assertEqual(final_state.filled_qty, 1.0)
+        self.assertEqual(len(tracker.get_open_orders()), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

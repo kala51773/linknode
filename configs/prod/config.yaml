@@ -1,0 +1,25 @@
+# M4 Production Configuration Example
+exchange:
+  b_leg_exchange: "binance_futures"
+  a_leg_exchange: "binance_futures"
+
+universe:
+  min_volume_24h_usd: 50_000_000 # Only liquidalts
+
+quote:
+  max_name_risk_ratio: 0.5   # PRD single name max nominal
+  q1_size_ratio: 0.10        # PRD size1
+  q2_size_ratio: 0.15
+  q3_size_ratio: 0.25
+  theta1_bps: 60.0           # 0.6%
+  theta2_bps: 100.0          # 1.0%
+
+risk:
+  daily_loss_limit_pct: 2.0  
+  strategy_drawdown_stop_pct: 5.0
+  max_events_per_day: 20
+  kill_latency_ms: 250
+  
+system:
+  run_daily_review: true
+  webhook_alert: true

@@ -7,6 +7,10 @@ Requires-Python: >=3.11
 Description-Content-Type: text/markdown
 Requires-Dist: websockets>=12.0
 Requires-Dist: aiohttp>=3.9
+Requires-Dist: pyarrow>=14.0
+Requires-Dist: pandas>=2.0
+Requires-Dist: duckdb>=1.0
+Requires-Dist: python-dotenv>=1.2
 
 # Project WickHunter
 
@@ -78,3 +82,29 @@ python -m unittest discover -s tests -v
 ```
 
 说明：仓库根目录新增 `sitecustomize.py`，在本地直接执行 `python -m unittest ...` 时会自动把 `src/` 注入 `sys.path`，从而减少环境变量配置成本。
+
+## Live 运行（.env）
+
+项目支持从仓库根目录 `.env` 读取 Binance 配置（优先用于本地开发）：
+
+```bash
+BINANCE_API_KEY=...
+BINANCE_API_SECRET=...
+BINANCE_TESTNET=true
+# 可选覆盖
+# BINANCE_REST_URL=https://testnet.binancefuture.com
+# BINANCE_WS_URL=wss://stream.binancefuture.com/ws
+```
+
+运行 live CLI：
+
+```bash
+python -m wickhunter.cli.run_live --quote-symbol ETHUSDT --hedge-symbol BTCUSDT --duration-seconds 60
+```
+
+常用参数：
+
+- `--skip-user-stream`：仅跑公开行情链路
+- `--health-output data/live_health.jsonl`：导出健康指标
+- `--startup-reconcile-attempts 3`：启动对账重试次数
+- `--startup-reconcile-backoff-seconds 1.0`：启动对账重试间隔

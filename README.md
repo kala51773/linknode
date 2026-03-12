@@ -37,7 +37,7 @@
 - `src/wickhunter/analytics/report.py`：事件级 PnL 与延迟/滑点报表汇总。
 - `src/wickhunter/portfolio/position.py`：持仓、均价与组合名义敞口跟踪。
 - `src/wickhunter/runtime.py`：运行时管线（交易所桥接 + 编排 + 组合持仓 + 停机保护）。
-- `src/wickhunter/cli/main.py`：开发期 CLI 入口（`--demo` / `--book-demo` / `--sync-demo` / `--quote-demo` / `--signal-demo` / `--mature-demo` / `--exchange-demo` / `--exchange-signal-demo` / `--m3-demo` / `--bridge-demo` / `--portfolio-demo` / `--runtime-demo` / `--exec-demo` / `--cancel-demo`）。
+- `src/wickhunter/cli/main.py`：开发期 CLI 入口（`--demo` / `--book-demo` / `--sync-demo` / `--quote-demo` / `--signal-demo` / `--mature-demo` / `--exchange-demo` / `--exchange-signal-demo` / `--okx-exchange-demo` / `--okx-exchange-signal-demo` / `--m3-demo` / `--bridge-demo` / `--portfolio-demo` / `--runtime-demo` / `--exec-demo` / `--cancel-demo`）。
 - `src/wickhunter/marketdata/orderbook.py`：本地订单簿快照+增量同步与序列连续性校验。
 - `src/wickhunter/marketdata/synchronizer.py`：快照到达前缓存增量并在快照后重放拼接。
 - `src/wickhunter/execution/engine.py`：B 成交事件经过风控校验后生成 A 对冲订单。
@@ -56,6 +56,8 @@ PYTHONPATH=src python -m wickhunter.cli.main --signal-demo
 PYTHONPATH=src python -m wickhunter.cli.main --mature-demo
 PYTHONPATH=src python -m wickhunter.cli.main --exchange-demo
 PYTHONPATH=src python -m wickhunter.cli.main --exchange-signal-demo
+PYTHONPATH=src python -m wickhunter.cli.main --okx-exchange-demo
+PYTHONPATH=src python -m wickhunter.cli.main --okx-exchange-signal-demo
 PYTHONPATH=src python -m wickhunter.cli.main --m3-demo
 PYTHONPATH=src python -m wickhunter.cli.main --replay-file data/sample_events.jsonl
 PYTHONPATH=src python -m wickhunter.cli.main --bridge-demo
@@ -68,3 +70,48 @@ python -m unittest discover -s tests -v
 ```
 
 说明：仓库根目录新增 `sitecustomize.py`，在本地直接执行 `python -m unittest ...` 时会自动把 `src/` 注入 `sys.path`，从而减少环境变量配置成本。
+
+## Live 运行（.env）
+
+项目支持从仓库根目录 `.env` 读取 Binance 配置（优先用于本地开发）：
+
+```bash
+BINANCE_API_KEY=...
+BINANCE_API_SECRET=...
+BINANCE_TESTNET=true
+# 可选覆盖
+# BINANCE_REST_URL=https://testnet.binancefuture.com
+# BINANCE_WS_URL=wss://stream.binancefuture.com/ws
+```
+
+运行 live CLI：
+
+```bash
+python -m wickhunter.cli.run_live --quote-symbol ETHUSDT --hedge-symbol BTCUSDT --duration-seconds 60
+```
+
+常用参数：
+
+- `--skip-user-stream`：仅跑公开行情链路
+- `--health-output data/live_health.jsonl`：导出健康指标
+- `--startup-reconcile-attempts 3`：启动对账重试次数
+- `--startup-reconcile-backoff-seconds 1.0`：启动对账重试间隔
+
+## OKX 模拟盘下单测试
+
+将以下变量写入项目根目录 `.env`：
+
+```bash
+OKX_API_KEY=...
+OKX_API_SECRET=...
+OKX_API_PASSPHRASE=...
+OKX_DEMO=true
+```
+
+执行下单+撤单测试脚本：
+
+```bash
+python scripts/test_okx_order_and_cancel.py --symbol BTC-USD-SWAP --td-mode cross
+```
+
+若返回 `sCode=51010`，通常是账户模式不匹配（如当前为 Simple 模式），需先在 OKX 模拟盘切到支持合约的账户模式后再测。

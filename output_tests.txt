@@ -1,0 +1,456 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- D:\codex\linknode\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\codex\linknode
+configfile: pyproject.toml
+plugins: asyncio-1.3.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 110 items
+
+tests/integration/test_storage_duckdb.py::test_parquet_to_duckdb_pipeline PASSED [  0%]
+tests/test_alpha.py::TestResidualModel::test_residual_calculation PASSED [  1%]
+tests/test_alpha.py::TestResidualModel::test_weighted_cross_venue_fair PASSED [  2%]
+tests/test_calculators.py::TestCalculators::test_compute_metrics PASSED  [  3%]
+tests/test_calculators.py::TestCalculators::test_empty_book_metrics PASSED [  4%]
+tests/test_circuit_breaker.py::TestCircuitBreaker::test_auto_resume_after_cooldown FAILED [  5%]
+tests/test_circuit_breaker.py::TestCircuitBreaker::test_stays_tripped_without_cooldown FAILED [  6%]
+tests/test_circuit_breaker.py::TestCircuitBreaker::test_trip_on_exchange_restriction FAILED [  7%]
+tests/test_circuit_breaker.py::TestCircuitBreaker::test_trip_on_latency FAILED [  8%]
+tests/test_cli.py::TestCli::test_run_book_demo_contains_marketdata_fields PASSED [  9%]
+tests/test_cli.py::TestCli::test_run_bridge_demo_contains_bridge_fields PASSED [ 10%]
+tests/test_cli.py::TestCli::test_run_cancel_demo_contains_decisions PASSED [ 10%]
+tests/test_cli.py::TestCli::test_run_demo_contains_key_context PASSED    [ 11%]
+tests/test_cli.py::TestCli::test_run_exchange_demo_contains_exchange_fields PASSED [ 12%]
+tests/test_cli.py::TestCli::test_run_exchange_signal_demo_contains_pipeline_fields PASSED [ 13%]
+tests/test_cli.py::TestCli::test_run_exec_demo_contains_execution_fields PASSED [ 14%]
+tests/test_cli.py::TestCli::test_run_m3_demo_contains_report_fields PASSED [ 15%]
+tests/test_cli.py::TestCli::test_run_m3_replay_file_from_jsonl PASSED    [ 16%]
+tests/test_cli.py::TestCli::test_run_mature_demo_contains_backend_fields PASSED [ 17%]
+tests/test_cli.py::TestCli::test_run_okx_exchange_demo_contains_exchange_fields PASSED [ 18%]
+tests/test_cli.py::TestCli::test_run_okx_exchange_signal_demo_contains_pipeline_fields PASSED [ 19%]
+tests/test_cli.py::TestCli::test_run_portfolio_demo_contains_portfolio_fields PASSED [ 20%]
+tests/test_cli.py::TestCli::test_run_quote_demo_contains_quote_fields PASSED [ 20%]
+tests/test_cli.py::TestCli::test_run_runtime_demo_contains_runtime_fields FAILED [ 21%]
+tests/test_cli.py::TestCli::test_run_signal_demo_contains_signal_fields PASSED [ 22%]
+tests/test_cli.py::TestCli::test_run_sync_demo_contains_sync_fields PASSED [ 23%]
+tests/test_config.py::TestExchangeConfig::test_from_env_allows_url_overrides PASSED [ 24%]
+tests/test_config.py::TestExchangeConfig::test_from_env_testnet_defaults PASSED [ 25%]
+tests/test_config.py::TestOKXConfig::test_from_env_demo_defaults PASSED  [ 26%]
+tests/test_config.py::TestOKXConfig::test_from_env_prod_defaults PASSED  [ 27%]
+tests/test_emergency_notifier.py::TestEmergencyNotifier::test_notify_collects_webhook_error PASSED [ 28%]
+tests/test_emergency_notifier.py::TestEmergencyNotifier::test_notify_persists_event_jsonl PASSED [ 29%]
+tests/test_exchange_binance.py::TestBinanceFuturesDepthParser::test_client_wraps_parser PASSED [ 30%]
+tests/test_exchange_binance.py::TestBinanceFuturesDepthParser::test_parse_depth_event PASSED [ 30%]
+tests/test_exchange_binance.py::TestBinanceFuturesClient::test_cancel_all_open_orders_calls_rest_endpoint PASSED [ 31%]
+tests/test_exchange_bridge.py::TestExchangeBridge::test_ingest_many_feeds_signal_engine PASSED [ 32%]
+tests/test_exchange_bridge.py::TestExchangeBridge::test_okx_ingest_many_feeds_signal_engine PASSED [ 33%]
+tests/test_exchange_live.py::TestBinanceUserDataStream::test_account_update_routes_to_account_callback PASSED [ 34%]
+tests/test_exchange_live.py::TestBinanceUserDataStream::test_combined_stream_payload_is_supported PASSED [ 35%]
+tests/test_exchange_live.py::TestBinanceUserDataStream::test_listen_key_expired_sets_flag_and_emits_event PASSED [ 36%]
+tests/test_exchange_live.py::TestBinanceUserDataStream::test_malformed_json_increments_decode_error_counter PASSED [ 37%]
+tests/test_exchange_live.py::TestBinanceUserDataStream::test_order_trade_update_routes_to_report_callback PASSED [ 38%]
+tests/test_exchange_live.py::TestBinanceUserDataStreamAsync::test_start_recreates_listen_key_after_expired_event PASSED [ 39%]
+tests/test_exchange_okx.py::TestOKXDepthParser::test_client_wraps_parser PASSED [ 40%]
+tests/test_exchange_okx.py::TestOKXDepthParser::test_parse_depth_event PASSED [ 40%]
+tests/test_exchange_okx.py::TestOKXDepthParser::test_parser_rejects_non_depth_payload PASSED [ 41%]
+tests/test_exchange_okx.py::TestOKXSignedHeaders::test_build_signed_headers_contains_required_fields PASSED [ 42%]
+tests/test_execution.py::TestExecution::test_cancel_decision_uses_throttle PASSED [ 43%]
+tests/test_execution.py::TestExecution::test_generate_buy_hedge_for_sell_fill PASSED [ 44%]
+tests/test_execution.py::TestExecution::test_generate_hedge_order_when_risk_ok PASSED [ 45%]
+tests/test_execution.py::TestExecution::test_reject_when_risk_limit_hit PASSED [ 46%]
+tests/test_health_export.py::TestHealthExport::test_format_prometheus_snapshot_numeric_and_bool PASSED [ 47%]
+tests/test_health_export.py::TestHealthExport::test_jsonl_exporter_appends_lines PASSED [ 48%]
+tests/test_health_export.py::TestHealthExport::test_prometheus_exporter_overwrites_file PASSED [ 49%]
+tests/test_latency_model.py::TestLatencyModel::test_negative_notional_rejected PASSED [ 50%]
+tests/test_latency_model.py::TestLatencyModel::test_simulate_latency_and_slippage PASSED [ 50%]
+tests/test_mature_engine.py::TestMatureEngineAdapter::test_nautilus_emergency_stop_noop PASSED [ 51%]
+tests/test_mature_engine.py::TestMatureEngineAdapter::test_reject_unarmed_plan PASSED [ 52%]
+tests/test_mature_engine.py::TestMatureEngineAdapter::test_submit_armed_plan_to_nautilus_adapter PASSED [ 53%]
+tests/test_mature_engine.py::TestMatureEngineAdapter::test_submit_hedge_order PASSED [ 54%]
+tests/test_mature_engine.py::TestBinanceDirectAdapter::test_emergency_stop_cancel_all_symbols PASSED [ 55%]
+tests/test_mature_engine.py::TestBinanceDirectAdapter::test_emergency_stop_retry_and_fail PASSED [ 56%]
+tests/test_mature_engine.py::TestBinanceDirectAdapter::test_on_execution_report_moves_order_to_filled PASSED [ 57%]
+tests/test_mature_engine.py::TestBinanceDirectAdapter::test_reconcile_open_orders_marks_not_found_as_expired PASSED [ 58%]
+tests/test_mature_engine.py::TestBinanceDirectAdapter::test_reconcile_open_orders_reports_query_failed_when_open_orders_call_fails PASSED [ 59%]
+tests/test_mature_engine.py::TestBinanceDirectAdapter::test_reconcile_open_orders_reports_unresolved_when_status_query_fails PASSED [ 60%]
+tests/test_mature_engine.py::TestBinanceDirectAdapter::test_reconcile_open_orders_strict_success_when_consistent PASSED [ 60%]
+tests/test_mature_engine.py::TestBinanceDirectAdapter::test_reject_non_retryable_exchange_error PASSED [ 61%]
+tests/test_mature_engine.py::TestBinanceDirectAdapter::test_retry_on_retryable_code_then_success PASSED [ 62%]
+tests/test_mature_engine.py::TestBinanceDirectAdapter::test_submit_hedge_order_success PASSED [ 63%]
+tests/test_mature_engine.py::TestBinanceDirectAdapter::test_submit_quote_plan_missing_symbol_rejected PASSED [ 64%]
+tests/test_mature_engine.py::TestBinanceDirectAdapter::test_submit_quote_plan_uses_first_level PASSED [ 65%]
+tests/test_orchestrator.py::TestCoreOrchestrator::test_submit_quote_and_hedge_to_backend PASSED [ 66%]
+tests/test_order_tracker.py::TestOrderTracker::test_generate_client_id_has_prefix PASSED [ 67%]
+tests/test_order_tracker.py::TestOrderTracker::test_invalid_transition_raises PASSED [ 68%]
+tests/test_order_tracker.py::TestOrderTracker::test_track_and_reconcile_with_exchange_id PASSED [ 69%]
+tests/test_orderbook.py::TestOrderBook::test_gap_raises PASSED           [ 70%]
+tests/test_orderbook.py::TestOrderBook::test_snapshot_then_diff_updates PASSED [ 70%]
+tests/test_orderbook.py::TestOrderBook::test_stale_update_ignored PASSED [ 71%]
+tests/test_portfolio.py::TestPortfolio::test_accumulate_and_reduce_position PASSED [ 72%]
+tests/test_portfolio.py::TestPortfolio::test_flip_position_sets_new_avg PASSED [ 73%]
+tests/test_portfolio.py::TestPortfolio::test_gross_notional PASSED       [ 74%]
+tests/test_quote_engine.py::TestQuoteEngine::test_arm_and_build_levels PASSED [ 75%]
+tests/test_quote_engine.py::TestQuoteEngine::test_not_armed_when_depth_not_collapsed PASSED [ 76%]
+tests/test_replay.py::TestReplay::test_events_are_sorted_by_ts PASSED    [ 77%]
+tests/test_replay.py::TestReplay::test_load_jsonl_and_sort PASSED        [ 78%]
+tests/test_report.py::TestReport::test_build_event_report PASSED         [ 79%]
+tests/test_risk_checks.py::TestRiskAccountChecks::test_build_account_snapshot_prefers_usdt PASSED [ 80%]
+tests/test_risk_checks.py::TestRiskAccountChecks::test_build_account_snapshot_returns_none_when_missing_balances PASSED [ 80%]
+tests/test_risk_checks.py::TestRiskAccountChecks::test_can_accept_account_snapshot_rejects_low_available_ratio PASSED [ 81%]
+tests/test_runtime.py::TestRuntime::test_runtime_account_update_breach_triggers_emergency FAILED [ 82%]
+tests/test_runtime.py::TestRuntime::test_runtime_account_update_healthy_snapshot FAILED [ 83%]
+tests/test_runtime.py::TestRuntime::test_runtime_account_update_parse_failure_collected FAILED [ 84%]
+tests/test_runtime.py::TestRuntime::test_runtime_halts_after_emergency_trigger FAILED [ 85%]
+tests/test_runtime.py::TestRuntime::test_runtime_notifier_exception_collected FAILED [ 86%]
+tests/test_runtime.py::TestRuntime::test_runtime_notifies_emergency_event FAILED [ 87%]
+tests/test_runtime.py::TestRuntime::test_runtime_step_blocked_by_circuit_breaker FAILED [ 88%]
+tests/test_runtime.py::TestRuntime::test_runtime_step_success FAILED     [ 89%]
+tests/test_runtime.py::TestRuntime::test_runtime_tracks_sell_fill_as_short_position FAILED [ 90%]
+tests/test_signal_engine.py::TestSignalEngine::test_accept_normalized_depth_event PASSED [ 90%]
+tests/test_signal_engine.py::TestSignalEngine::test_plan_blocked_before_sync PASSED [ 91%]
+tests/test_signal_engine.py::TestSignalEngine::test_plan_generated_after_sync PASSED [ 92%]
+tests/test_state_machine.py::TestStateMachine::test_happy_path PASSED    [ 93%]
+tests/test_state_machine.py::TestStateMachine::test_invalid_transition PASSED [ 94%]
+tests/test_synchronizer.py::TestBookSynchronizer::test_buffer_then_snapshot_replay PASSED [ 95%]
+tests/test_synchronizer.py::TestBookSynchronizer::test_drop_stale_buffer_updates PASSED [ 96%]
+tests/test_synchronizer.py::TestBookSynchronizer::test_reset_clears_sync_state PASSED [ 97%]
+tests/test_throttle.py::TestCancelThrottle::test_allow_after_window_rolls PASSED [ 98%]
+tests/test_throttle.py::TestCancelThrottle::test_reject_before_min_live_time PASSED [ 99%]
+tests/test_throttle.py::TestCancelThrottle::test_reject_when_cancel_rate_too_high PASSED [100%]
+
+================================== FAILURES ===================================
+_____________ TestCircuitBreaker.test_auto_resume_after_cooldown ______________
+
+self = <test_circuit_breaker.TestCircuitBreaker testMethod=test_auto_resume_after_cooldown>
+
+    def test_auto_resume_after_cooldown(self) -> None:
+>       cb = CircuitBreaker(cooldown_seconds=5.0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: CircuitBreaker.__init__() got an unexpected keyword argument 'cooldown_seconds'
+
+tests\test_circuit_breaker.py:50: TypeError
+___________ TestCircuitBreaker.test_stays_tripped_without_cooldown ____________
+
+self = <test_circuit_breaker.TestCircuitBreaker testMethod=test_stays_tripped_without_cooldown>
+
+    def test_stays_tripped_without_cooldown(self) -> None:
+>       cb = CircuitBreaker()
+             ^^^^^^^^^^^^^^^^
+E       TypeError: CircuitBreaker.__init__() missing 1 required positional argument: 'alert_sender'
+
+tests\test_circuit_breaker.py:31: TypeError
+____________ TestCircuitBreaker.test_trip_on_exchange_restriction _____________
+
+self = <test_circuit_breaker.TestCircuitBreaker testMethod=test_trip_on_exchange_restriction>
+
+    def test_trip_on_exchange_restriction(self) -> None:
+>       cb = CircuitBreaker()
+             ^^^^^^^^^^^^^^^^
+E       TypeError: CircuitBreaker.__init__() missing 1 required positional argument: 'alert_sender'
+
+tests\test_circuit_breaker.py:20: TypeError
+___________________ TestCircuitBreaker.test_trip_on_latency ___________________
+
+self = <test_circuit_breaker.TestCircuitBreaker testMethod=test_trip_on_latency>
+
+    def test_trip_on_latency(self) -> None:
+>       cb = CircuitBreaker(max_marketdata_latency_ms=250)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: CircuitBreaker.__init__() got an unexpected keyword argument 'max_marketdata_latency_ms'
+
+tests\test_circuit_breaker.py:9: TypeError
+____________ TestCli.test_run_runtime_demo_contains_runtime_fields ____________
+
+self = <test_cli.TestCli testMethod=test_run_runtime_demo_contains_runtime_fields>
+
+    def test_run_runtime_demo_contains_runtime_fields(self) -> None:
+>       output = run_runtime_demo()
+                 ^^^^^^^^^^^^^^^^^^
+
+tests\test_cli.py:122: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\wickhunter\cli\main.py:253: in run_runtime_demo
+    runtime = WickHunterRuntime(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <[AttributeError("'WickHunterRuntime' object has no attribute 'circuit_breaker'") raised in repr()] WickHunterRuntime object at 0x21689826dd0>
+bridge = BinanceSignalBridge(client=BinanceFuturesClient(depth_parser=BinanceFuturesDepthParser(exchange_name='binance_futures'...=None, _from_snapshot=False, bids={}, asks={}), _buffer=[], _synced=False), residual_model=None, last_fair_value=None))
+orchestrator = CoreOrchestrator(signal_engine=SignalEngine(quote_engine=QuoteEngine(theta1=0.006, theta2=0.01, theta3=0.016, max_name...MatureEngineKind.NAUTILUS_TRADER: 'nautilus_trader'>, sent_quote_plans=[], sent_hedge_orders=[], emergency_reasons=[]))
+portfolio = <factory>, circuit_breaker = <factory>, emergency_symbols = ()
+emergency_events = <factory>, emergency_notifier = None
+emergency_notification_errors = <factory>, account_risk_checker = <factory>
+last_account_snapshot = None, account_risk_errors = <factory>
+account_risk_reject_count = 0, halted = False
+
+>   ???
+E   TypeError: CircuitBreaker.__init__() missing 1 required positional argument: 'alert_sender'
+
+<string>:6: TypeError
+______ TestRuntime.test_runtime_account_update_breach_triggers_emergency ______
+
+self = <test_runtime.TestRuntime testMethod=test_runtime_account_update_breach_triggers_emergency>
+
+    def test_runtime_account_update_breach_triggers_emergency(self) -> None:
+>       runtime = self._build_runtime()
+                  ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_runtime.py:185: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_runtime.py:51: in _build_runtime
+    return WickHunterRuntime(bridge=bridge, orchestrator=orchestrator, emergency_symbols=("BTCUSDT",))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <[AttributeError("'WickHunterRuntime' object has no attribute 'circuit_breaker'") raised in repr()] WickHunterRuntime object at 0x21689726950>
+bridge = BinanceSignalBridge(client=BinanceFuturesClient(depth_parser=BinanceFuturesDepthParser(exchange_name='binance_futures'...=None, _from_snapshot=False, bids={}, asks={}), _buffer=[], _synced=False), residual_model=None, last_fair_value=None))
+orchestrator = CoreOrchestrator(signal_engine=SignalEngine(quote_engine=QuoteEngine(theta1=0.006, theta2=0.01, theta3=0.016, max_name...MatureEngineKind.NAUTILUS_TRADER: 'nautilus_trader'>, sent_quote_plans=[], sent_hedge_orders=[], emergency_reasons=[]))
+portfolio = <factory>, circuit_breaker = <factory>
+emergency_symbols = ('BTCUSDT',), emergency_events = <factory>
+emergency_notifier = None, emergency_notification_errors = <factory>
+account_risk_checker = <factory>, last_account_snapshot = None
+account_risk_errors = <factory>, account_risk_reject_count = 0, halted = False
+
+>   ???
+E   TypeError: CircuitBreaker.__init__() missing 1 required positional argument: 'alert_sender'
+
+<string>:6: TypeError
+__________ TestRuntime.test_runtime_account_update_healthy_snapshot ___________
+
+self = <test_runtime.TestRuntime testMethod=test_runtime_account_update_healthy_snapshot>
+
+    def test_runtime_account_update_healthy_snapshot(self) -> None:
+>       runtime = self._build_runtime()
+                  ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_runtime.py:177: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_runtime.py:51: in _build_runtime
+    return WickHunterRuntime(bridge=bridge, orchestrator=orchestrator, emergency_symbols=("BTCUSDT",))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <[AttributeError("'WickHunterRuntime' object has no attribute 'circuit_breaker'") raised in repr()] WickHunterRuntime object at 0x216cbc06710>
+bridge = BinanceSignalBridge(client=BinanceFuturesClient(depth_parser=BinanceFuturesDepthParser(exchange_name='binance_futures'...=None, _from_snapshot=False, bids={}, asks={}), _buffer=[], _synced=False), residual_model=None, last_fair_value=None))
+orchestrator = CoreOrchestrator(signal_engine=SignalEngine(quote_engine=QuoteEngine(theta1=0.006, theta2=0.01, theta3=0.016, max_name...MatureEngineKind.NAUTILUS_TRADER: 'nautilus_trader'>, sent_quote_plans=[], sent_hedge_orders=[], emergency_reasons=[]))
+portfolio = <factory>, circuit_breaker = <factory>
+emergency_symbols = ('BTCUSDT',), emergency_events = <factory>
+emergency_notifier = None, emergency_notification_errors = <factory>
+account_risk_checker = <factory>, last_account_snapshot = None
+account_risk_errors = <factory>, account_risk_reject_count = 0, halted = False
+
+>   ???
+E   TypeError: CircuitBreaker.__init__() missing 1 required positional argument: 'alert_sender'
+
+<string>:6: TypeError
+_______ TestRuntime.test_runtime_account_update_parse_failure_collected _______
+
+self = <test_runtime.TestRuntime testMethod=test_runtime_account_update_parse_failure_collected>
+
+    def test_runtime_account_update_parse_failure_collected(self) -> None:
+>       runtime = self._build_runtime()
+                  ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_runtime.py:194: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_runtime.py:51: in _build_runtime
+    return WickHunterRuntime(bridge=bridge, orchestrator=orchestrator, emergency_symbols=("BTCUSDT",))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <[AttributeError("'WickHunterRuntime' object has no attribute 'circuit_breaker'") raised in repr()] WickHunterRuntime object at 0x216cbc07760>
+bridge = BinanceSignalBridge(client=BinanceFuturesClient(depth_parser=BinanceFuturesDepthParser(exchange_name='binance_futures'...=None, _from_snapshot=False, bids={}, asks={}), _buffer=[], _synced=False), residual_model=None, last_fair_value=None))
+orchestrator = CoreOrchestrator(signal_engine=SignalEngine(quote_engine=QuoteEngine(theta1=0.006, theta2=0.01, theta3=0.016, max_name...MatureEngineKind.NAUTILUS_TRADER: 'nautilus_trader'>, sent_quote_plans=[], sent_hedge_orders=[], emergency_reasons=[]))
+portfolio = <factory>, circuit_breaker = <factory>
+emergency_symbols = ('BTCUSDT',), emergency_events = <factory>
+emergency_notifier = None, emergency_notification_errors = <factory>
+account_risk_checker = <factory>, last_account_snapshot = None
+account_risk_errors = <factory>, account_risk_reject_count = 0, halted = False
+
+>   ???
+E   TypeError: CircuitBreaker.__init__() missing 1 required positional argument: 'alert_sender'
+
+<string>:6: TypeError
+___________ TestRuntime.test_runtime_halts_after_emergency_trigger ____________
+
+self = <test_runtime.TestRuntime testMethod=test_runtime_halts_after_emergency_trigger>
+
+    def test_runtime_halts_after_emergency_trigger(self) -> None:
+>       runtime = self._build_runtime()
+                  ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_runtime.py:111: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_runtime.py:51: in _build_runtime
+    return WickHunterRuntime(bridge=bridge, orchestrator=orchestrator, emergency_symbols=("BTCUSDT",))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <[AttributeError("'WickHunterRuntime' object has no attribute 'circuit_breaker'") raised in repr()] WickHunterRuntime object at 0x216cbc07ac0>
+bridge = BinanceSignalBridge(client=BinanceFuturesClient(depth_parser=BinanceFuturesDepthParser(exchange_name='binance_futures'...=None, _from_snapshot=False, bids={}, asks={}), _buffer=[], _synced=False), residual_model=None, last_fair_value=None))
+orchestrator = CoreOrchestrator(signal_engine=SignalEngine(quote_engine=QuoteEngine(theta1=0.006, theta2=0.01, theta3=0.016, max_name...MatureEngineKind.NAUTILUS_TRADER: 'nautilus_trader'>, sent_quote_plans=[], sent_hedge_orders=[], emergency_reasons=[]))
+portfolio = <factory>, circuit_breaker = <factory>
+emergency_symbols = ('BTCUSDT',), emergency_events = <factory>
+emergency_notifier = None, emergency_notification_errors = <factory>
+account_risk_checker = <factory>, last_account_snapshot = None
+account_risk_errors = <factory>, account_risk_reject_count = 0, halted = False
+
+>   ???
+E   TypeError: CircuitBreaker.__init__() missing 1 required positional argument: 'alert_sender'
+
+<string>:6: TypeError
+____________ TestRuntime.test_runtime_notifier_exception_collected ____________
+
+self = <test_runtime.TestRuntime testMethod=test_runtime_notifier_exception_collected>
+
+    def test_runtime_notifier_exception_collected(self) -> None:
+>       runtime = self._build_runtime()
+                  ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_runtime.py:160: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_runtime.py:51: in _build_runtime
+    return WickHunterRuntime(bridge=bridge, orchestrator=orchestrator, emergency_symbols=("BTCUSDT",))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <[AttributeError("'WickHunterRuntime' object has no attribute 'circuit_breaker'") raised in repr()] WickHunterRuntime object at 0x216cbc070a0>
+bridge = BinanceSignalBridge(client=BinanceFuturesClient(depth_parser=BinanceFuturesDepthParser(exchange_name='binance_futures'...=None, _from_snapshot=False, bids={}, asks={}), _buffer=[], _synced=False), residual_model=None, last_fair_value=None))
+orchestrator = CoreOrchestrator(signal_engine=SignalEngine(quote_engine=QuoteEngine(theta1=0.006, theta2=0.01, theta3=0.016, max_name...MatureEngineKind.NAUTILUS_TRADER: 'nautilus_trader'>, sent_quote_plans=[], sent_hedge_orders=[], emergency_reasons=[]))
+portfolio = <factory>, circuit_breaker = <factory>
+emergency_symbols = ('BTCUSDT',), emergency_events = <factory>
+emergency_notifier = None, emergency_notification_errors = <factory>
+account_risk_checker = <factory>, last_account_snapshot = None
+account_risk_errors = <factory>, account_risk_reject_count = 0, halted = False
+
+>   ???
+E   TypeError: CircuitBreaker.__init__() missing 1 required positional argument: 'alert_sender'
+
+<string>:6: TypeError
+______________ TestRuntime.test_runtime_notifies_emergency_event ______________
+
+self = <test_runtime.TestRuntime testMethod=test_runtime_notifies_emergency_event>
+
+    def test_runtime_notifies_emergency_event(self) -> None:
+>       runtime = self._build_runtime()
+                  ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_runtime.py:140: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_runtime.py:51: in _build_runtime
+    return WickHunterRuntime(bridge=bridge, orchestrator=orchestrator, emergency_symbols=("BTCUSDT",))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <[AttributeError("'WickHunterRuntime' object has no attribute 'circuit_breaker'") raised in repr()] WickHunterRuntime object at 0x216cbc07a30>
+bridge = BinanceSignalBridge(client=BinanceFuturesClient(depth_parser=BinanceFuturesDepthParser(exchange_name='binance_futures'...=None, _from_snapshot=False, bids={}, asks={}), _buffer=[], _synced=False), residual_model=None, last_fair_value=None))
+orchestrator = CoreOrchestrator(signal_engine=SignalEngine(quote_engine=QuoteEngine(theta1=0.006, theta2=0.01, theta3=0.016, max_name...MatureEngineKind.NAUTILUS_TRADER: 'nautilus_trader'>, sent_quote_plans=[], sent_hedge_orders=[], emergency_reasons=[]))
+portfolio = <factory>, circuit_breaker = <factory>
+emergency_symbols = ('BTCUSDT',), emergency_events = <factory>
+emergency_notifier = None, emergency_notification_errors = <factory>
+account_risk_checker = <factory>, last_account_snapshot = None
+account_risk_errors = <factory>, account_risk_reject_count = 0, halted = False
+
+>   ???
+E   TypeError: CircuitBreaker.__init__() missing 1 required positional argument: 'alert_sender'
+
+<string>:6: TypeError
+__________ TestRuntime.test_runtime_step_blocked_by_circuit_breaker ___________
+
+self = <test_runtime.TestRuntime testMethod=test_runtime_step_blocked_by_circuit_breaker>
+
+    def test_runtime_step_blocked_by_circuit_breaker(self) -> None:
+>       runtime = self._build_runtime()
+                  ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_runtime.py:96: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_runtime.py:51: in _build_runtime
+    return WickHunterRuntime(bridge=bridge, orchestrator=orchestrator, emergency_symbols=("BTCUSDT",))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <[AttributeError("'WickHunterRuntime' object has no attribute 'circuit_breaker'") raised in repr()] WickHunterRuntime object at 0x216cbc07eb0>
+bridge = BinanceSignalBridge(client=BinanceFuturesClient(depth_parser=BinanceFuturesDepthParser(exchange_name='binance_futures'...=None, _from_snapshot=False, bids={}, asks={}), _buffer=[], _synced=False), residual_model=None, last_fair_value=None))
+orchestrator = CoreOrchestrator(signal_engine=SignalEngine(quote_engine=QuoteEngine(theta1=0.006, theta2=0.01, theta3=0.016, max_name...MatureEngineKind.NAUTILUS_TRADER: 'nautilus_trader'>, sent_quote_plans=[], sent_hedge_orders=[], emergency_reasons=[]))
+portfolio = <factory>, circuit_breaker = <factory>
+emergency_symbols = ('BTCUSDT',), emergency_events = <factory>
+emergency_notifier = None, emergency_notification_errors = <factory>
+account_risk_checker = <factory>, last_account_snapshot = None
+account_risk_errors = <factory>, account_risk_reject_count = 0, halted = False
+
+>   ???
+E   TypeError: CircuitBreaker.__init__() missing 1 required positional argument: 'alert_sender'
+
+<string>:6: TypeError
+____________________ TestRuntime.test_runtime_step_success ____________________
+
+self = <test_runtime.TestRuntime testMethod=test_runtime_step_success>
+
+    def test_runtime_step_success(self) -> None:
+>       runtime = self._build_runtime()
+                  ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_runtime.py:54: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_runtime.py:51: in _build_runtime
+    return WickHunterRuntime(bridge=bridge, orchestrator=orchestrator, emergency_symbols=("BTCUSDT",))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <[AttributeError("'WickHunterRuntime' object has no attribute 'circuit_breaker'") raised in repr()] WickHunterRuntime object at 0x216cbc07d90>
+bridge = BinanceSignalBridge(client=BinanceFuturesClient(depth_parser=BinanceFuturesDepthParser(exchange_name='binance_futures'...=None, _from_snapshot=False, bids={}, asks={}), _buffer=[], _synced=False), residual_model=None, last_fair_value=None))
+orchestrator = CoreOrchestrator(signal_engine=SignalEngine(quote_engine=QuoteEngine(theta1=0.006, theta2=0.01, theta3=0.016, max_name...MatureEngineKind.NAUTILUS_TRADER: 'nautilus_trader'>, sent_quote_plans=[], sent_hedge_orders=[], emergency_reasons=[]))
+portfolio = <factory>, circuit_breaker = <factory>
+emergency_symbols = ('BTCUSDT',), emergency_events = <factory>
+emergency_notifier = None, emergency_notification_errors = <factory>
+account_risk_checker = <factory>, last_account_snapshot = None
+account_risk_errors = <factory>, account_risk_reject_count = 0, halted = False
+
+>   ???
+E   TypeError: CircuitBreaker.__init__() missing 1 required positional argument: 'alert_sender'
+
+<string>:6: TypeError
+_________ TestRuntime.test_runtime_tracks_sell_fill_as_short_position _________
+
+self = <test_runtime.TestRuntime testMethod=test_runtime_tracks_sell_fill_as_short_position>
+
+    def test_runtime_tracks_sell_fill_as_short_position(self) -> None:
+>       runtime = self._build_runtime()
+                  ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_runtime.py:76: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_runtime.py:51: in _build_runtime
+    return WickHunterRuntime(bridge=bridge, orchestrator=orchestrator, emergency_symbols=("BTCUSDT",))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <[AttributeError("'WickHunterRuntime' object has no attribute 'circuit_breaker'") raised in repr()] WickHunterRuntime object at 0x216cbc076d0>
+bridge = BinanceSignalBridge(client=BinanceFuturesClient(depth_parser=BinanceFuturesDepthParser(exchange_name='binance_futures'...=None, _from_snapshot=False, bids={}, asks={}), _buffer=[], _synced=False), residual_model=None, last_fair_value=None))
+orchestrator = CoreOrchestrator(signal_engine=SignalEngine(quote_engine=QuoteEngine(theta1=0.006, theta2=0.01, theta3=0.016, max_name...MatureEngineKind.NAUTILUS_TRADER: 'nautilus_trader'>, sent_quote_plans=[], sent_hedge_orders=[], emergency_reasons=[]))
+portfolio = <factory>, circuit_breaker = <factory>
+emergency_symbols = ('BTCUSDT',), emergency_events = <factory>
+emergency_notifier = None, emergency_notification_errors = <factory>
+account_risk_checker = <factory>, last_account_snapshot = None
+account_risk_errors = <factory>, account_risk_reject_count = 0, halted = False
+
+>   ???
+E   TypeError: CircuitBreaker.__init__() missing 1 required positional argument: 'alert_sender'
+
+<string>:6: TypeError
+=========================== short test summary info ===========================
+FAILED tests/test_circuit_breaker.py::TestCircuitBreaker::test_auto_resume_after_cooldown
+FAILED tests/test_circuit_breaker.py::TestCircuitBreaker::test_stays_tripped_without_cooldown
+FAILED tests/test_circuit_breaker.py::TestCircuitBreaker::test_trip_on_exchange_restriction
+FAILED tests/test_circuit_breaker.py::TestCircuitBreaker::test_trip_on_latency
+FAILED tests/test_cli.py::TestCli::test_run_runtime_demo_contains_runtime_fields
+FAILED tests/test_runtime.py::TestRuntime::test_runtime_account_update_breach_triggers_emergency
+FAILED tests/test_runtime.py::TestRuntime::test_runtime_account_update_healthy_snapshot
+FAILED tests/test_runtime.py::TestRuntime::test_runtime_account_update_parse_failure_collected
+FAILED tests/test_runtime.py::TestRuntime::test_runtime_halts_after_emergency_trigger
+FAILED tests/test_runtime.py::TestRuntime::test_runtime_notifier_exception_collected
+FAILED tests/test_runtime.py::TestRuntime::test_runtime_notifies_emergency_event
+FAILED tests/test_runtime.py::TestRuntime::test_runtime_step_blocked_by_circuit_breaker
+FAILED tests/test_runtime.py::TestRuntime::test_runtime_step_success - TypeEr...
+FAILED tests/test_runtime.py::TestRuntime::test_runtime_tracks_sell_fill_as_short_position
+======================== 14 failed, 96 passed in 1.02s ========================

@@ -22,12 +22,15 @@ class QuoteEngine:
     theta2: float = 0.010
     theta3: float = 0.016
     max_name_risk: float = 10_000.0
+    min_expected_edge_bps: float = 0.0
 
     def should_arm(self, metrics: MicrostructureMetrics, baseline_depth_5bp: float) -> tuple[bool, str]:
         if baseline_depth_5bp <= 0:
             return False, "invalid_baseline"
         if metrics.spread_bps is None:
             return False, "missing_spread"
+        if (self.theta1 * 10_000.0) < self.min_expected_edge_bps:
+            return False, "edge_below_cost"
 
         depth_ratio = metrics.depth_5bp_bid / baseline_depth_5bp
         if depth_ratio > 0.40:

@@ -30,6 +30,13 @@ class TestQuoteEngine(unittest.TestCase):
         self.assertFalse(plan.armed)
         self.assertEqual(plan.levels, tuple())
 
+    def test_not_armed_when_edge_below_cost_threshold(self) -> None:
+        engine = QuoteEngine(theta1=0.0001, theta2=0.0002, theta3=0.0003, min_expected_edge_bps=2.0)
+        metrics = MicrostructureMetrics(spread_bps=10.0, depth_5bp_bid=20.0, depth_10bp_bid=30.0)
+        armed, reason = engine.should_arm(metrics, baseline_depth_5bp=100.0)
+        self.assertFalse(armed)
+        self.assertEqual(reason, "edge_below_cost")
+
 
 if __name__ == "__main__":
     unittest.main()

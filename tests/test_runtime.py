@@ -107,6 +107,23 @@ class TestRuntime(unittest.TestCase):
         self.assertEqual(res.reason, "marketdata_latency")
         self.assertTrue(res.emergency_triggered)
 
+    def test_runtime_step_blocked_by_daily_loss_hard_stop(self) -> None:
+        runtime = self._build_runtime()
+        res = runtime.step(
+            fair_price=100.0,
+            fill=FillEvent(symbol="ALTUSDT", qty=1, price=10),
+            risk_state=RuntimeRiskState(daily_loss_pct=2.1, events_today=1, naked_b_exposure_seconds=0.0),
+            hedge_reference_price=50_000,
+            marketdata_latency_ms=10,
+            consecutive_hedge_failures=0,
+            exchange_restricted=False,
+        )
+
+        self.assertFalse(res.accepted)
+        self.assertEqual(res.reason, "daily_loss_limit")
+        self.assertTrue(res.emergency_triggered)
+        self.assertTrue(runtime.halted)
+
     def test_runtime_halts_after_emergency_trigger(self) -> None:
         runtime = self._build_runtime()
         first = runtime.step(
@@ -135,6 +152,38 @@ class TestRuntime(unittest.TestCase):
         self.assertEqual(len(runtime.emergency_events), 1)
         self.assertEqual(runtime.emergency_events[0].reason, "marketdata_latency")
         self.assertTrue(runtime.halted)
+
+    def test_runtime_reset_halt_allows_resume(self) -> None:
+        runtime = self._build_runtime()
+        first = runtime.step(
+            fair_price=100.0,
+            fill=FillEvent(symbol="ALTUSDT", qty=1, price=10),
+            risk_state=RuntimeRiskState(daily_loss_pct=2.1, events_today=1, naked_b_exposure_seconds=0.0),
+            hedge_reference_price=50_000,
+            marketdata_latency_ms=10,
+            consecutive_hedge_failures=0,
+            exchange_restricted=False,
+        )
+        self.assertFalse(first.accepted)
+        self.assertTrue(runtime.halted)
+
+        runtime.reset_halt()
+        runtime.on_market_payloads([
+            '{"e":"depthUpdate","E":1,"s":"BTCUSDT","U":101,"u":101,"pu":100,"b":[["100.0","30.0"]],"a":[]}',
+            '{"e":"depthUpdate","E":2,"s":"BTCUSDT","U":102,"u":102,"pu":101,"b":[],"a":[["100.1","5.0"]]}',
+        ])
+        runtime.on_snapshot(last_update_id=100, bids=((99.5, 20.0),), asks=((100.5, 5.0),))
+
+        second = runtime.step(
+            fair_price=100.0,
+            fill=FillEvent(symbol="ALTUSDT", qty=1, price=10),
+            risk_state=RuntimeRiskState(daily_loss_pct=0.1, events_today=1, naked_b_exposure_seconds=0.0),
+            hedge_reference_price=50_000,
+            marketdata_latency_ms=10,
+            consecutive_hedge_failures=0,
+            exchange_restricted=False,
+        )
+        self.assertTrue(second.accepted)
 
     def test_runtime_notifies_emergency_event(self) -> None:
         runtime = self._build_runtime()
@@ -172,6 +221,30 @@ class TestRuntime(unittest.TestCase):
 
         self.assertEqual(len(runtime.emergency_notification_errors), 1)
         self.assertIn("notifier_exception:notify_boom", runtime.emergency_notification_errors[0])
+
+    def test_runtime_account_update_healthy_snapshot(self) -> None:
+        runtime = self._build_runtime()
+        runtime.on_account_update({"B": [{"a": "USDT", "wb": "100.0", "cw": "20.0", "bc": "1.0"}]})
+
+        self.assertIsNotNone(runtime.last_account_snapshot)
+        self.assertFalse(runtime.halted)
+        self.assertEqual(runtime.account_risk_reject_count, 0)
+
+    def test_runtime_account_update_breach_triggers_emergency(self) -> None:
+        runtime = self._build_runtime()
+        runtime.on_account_update({"B": [{"a": "USDT", "wb": "100.0", "cw": "1.0"}]})
+
+        self.assertTrue(runtime.halted)
+        self.assertEqual(runtime.account_risk_reject_count, 1)
+        self.assertEqual(len(runtime.emergency_events), 1)
+        self.assertEqual(runtime.emergency_events[0].reason, "account_risk:available_balance_ratio")
+
+    def test_runtime_account_update_parse_failure_collected(self) -> None:
+        runtime = self._build_runtime()
+        runtime.on_account_update({"x": "invalid"})
+
+        self.assertEqual(runtime.account_risk_errors, ["account_update_parse_failed"])
+        self.assertFalse(runtime.halted)
 
 
 if __name__ == "__main__":

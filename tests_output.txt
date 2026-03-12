@@ -1,0 +1,47 @@
+........E......................................E...........
+======================================================================
+ERROR: test_cli (unittest.loader._FailedTest.test_cli)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_cli
+Traceback (most recent call last):
+  File "C:\Users\yan73\AppData\Roaming\uv\python\cpython-3.11.14-windows-x86_64-none\Lib\unittest\loader.py", line 419, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yan73\AppData\Roaming\uv\python\cpython-3.11.14-windows-x86_64-none\Lib\unittest\loader.py", line 362, in _get_module_from_name
+    __import__(name)
+  File "D:\codex\linknode\tests\test_cli.py", line 5, in <module>
+    from wickhunter.cli.main import (
+  File "D:\codex\linknode\src\wickhunter\cli\main.py", line 23, in <module>
+    from wickhunter.runtime import WickHunterRuntime
+  File "D:\codex\linknode\src\wickhunter\runtime.py", line 32, in <module>
+    class WickHunterRuntime:
+  File "D:\codex\linknode\src\wickhunter\runtime.py", line 48, in WickHunterRuntime
+    def on_user_report(self, payload: dict[str, Any]) -> None:
+                                                ^^^
+NameError: name 'Any' is not defined
+
+
+======================================================================
+ERROR: test_runtime (unittest.loader._FailedTest.test_runtime)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_runtime
+Traceback (most recent call last):
+  File "C:\Users\yan73\AppData\Roaming\uv\python\cpython-3.11.14-windows-x86_64-none\Lib\unittest\loader.py", line 419, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yan73\AppData\Roaming\uv\python\cpython-3.11.14-windows-x86_64-none\Lib\unittest\loader.py", line 362, in _get_module_from_name
+    __import__(name)
+  File "D:\codex\linknode\tests\test_runtime.py", line 14, in <module>
+    from wickhunter.runtime import WickHunterRuntime
+  File "D:\codex\linknode\src\wickhunter\runtime.py", line 32, in <module>
+    class WickHunterRuntime:
+  File "D:\codex\linknode\src\wickhunter\runtime.py", line 48, in WickHunterRuntime
+    def on_user_report(self, payload: dict[str, Any]) -> None:
+                                                ^^^
+NameError: name 'Any' is not defined
+
+
+----------------------------------------------------------------------
+Ran 59 tests in 0.013s
+
+FAILED (errors=2)
